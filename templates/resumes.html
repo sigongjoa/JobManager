@@ -1,0 +1,381 @@
+{% extends "base.html" %}
+
+{% block head %}
+<style>
+.modal {
+    z-index: 1050 !important;
+}
+.modal-backdrop {
+    z-index: 1040 !important;
+}
+.dropdown-menu {
+    z-index: 1060 !important;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>이력서 관리</h2>
+        <div>
+            <button type="button" class="btn btn-primary me-2" data-bs-toggle="modal" data-bs-target="#uploadModal">
+                이력서 업로드
+            </button>
+        </div>
+    </div>
+
+    <!-- 통계 카드 -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">총 이력서</h6>
+                    <h3 class="card-title">{{ stats.total }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">검토중</h6>
+                    <h3 class="card-title">{{ stats.reviewing }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">열람중</h6>
+                    <h3 class="card-title">{{ stats.in_progress }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">합격률</h6>
+                    <h3 class="card-title">{{ "%.1f"|format(stats.success_rate) }}%</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 이력서 목록 -->
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>이력서 제목</th>
+                            <th>채용공고</th>
+                            <th>상태</th>
+                            <th>생성일</th>
+                            <th>작업</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for resume in resumes %}
+                        <tr>
+                            <td>{{ resume.title }}</td>
+                            <td>{{ resume.job_posting.company_name }} - {{ resume.job_posting.job_title }}</td>
+                            <td>
+                                <div class="dropdown">
+                                    <button class="btn btn-sm dropdown-toggle {% if resume.status == '합격' %}btn-success{% elif resume.status == '검토중' %}btn-warning{% else %}btn-info{% endif %}" 
+                                            type="button" 
+                                            data-bs-toggle="dropdown">
+                                        {{ resume.status }}
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="#" onclick="updateResumeStatus('{{ resume.id }}', '검토중')">검토중</a></li>
+                                        <li><a class="dropdown-item" href="#" onclick="updateResumeStatus('{{ resume.id }}', '열람중')">열람중</a></li>
+                                        <li><a class="dropdown-item" href="#" onclick="updateResumeStatus('{{ resume.id }}', '합격')">합격</a></li>
+                                        <li><a class="dropdown-item" href="#" onclick="updateResumeStatus('{{ resume.id }}', '불합격')">불합격</a></li>
+                                    </ul>
+                                </div>
+                            </td>
+                            <td>{{ resume.created_at.strftime('%Y-%m-%d') }}</td>
+                            <td>
+                                <button class="btn btn-sm btn-primary" onclick="viewResume('{{ resume.id }}')">보기</button>
+                                <button class="btn btn-sm btn-danger" onclick="deleteResume('{{ resume.id }}')">삭제</button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 이력서 업로드 모달 -->
+<div class="modal fade" id="uploadModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">이력서 업로드</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="resumeForm" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="title" class="form-label">이력서 제목</label>
+                        <input type="text" class="form-control" id="title" name="title" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="jobPosting" class="form-label">채용공고</label>
+                        <select class="form-select" id="jobPosting" name="job_posting_id" required>
+                            <option value="">선택하세요</option>
+                            {% for job in jobs %}
+                            <option value="{{ job.id }}">{{ job.company_name }} - {{ job.job_title }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="status" class="form-label">상태</label>
+                        <select class="form-select" id="status" name="status" required>
+                            <option value="검토중">검토중</option>
+                            <option value="열람중">열람중</option>
+                            <option value="합격">합격</option>
+                            <option value="불합격">불합격</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="file" class="form-label">파일</label>
+                        <input type="file" class="form-control" id="file" name="file" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">자기소개서 질문/답변</label>
+                        <div id="questionsContainer">
+                            <!-- 질문/답변 쌍이 여기에 동적으로 추가됩니다 -->
+                        </div>
+                        <button type="button" class="btn btn-secondary mt-2" onclick="addQuestionField()">
+                            질문 추가
+                        </button>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                <button type="button" class="btn btn-primary" id="uploadButton">업로드</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 이력서 보기 모달 -->
+<div class="modal fade" id="viewModal" tabindex="-1" aria-labelledby="viewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="viewModalLabel">이력서 보기</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="resumeViewer"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+let isUploading = false;  // 업로드 중복 방지 플래그
+
+document.addEventListener('DOMContentLoaded', function() {
+    // 모달 초기화
+    const uploadModal = new bootstrap.Modal(document.getElementById('uploadModal'));
+    const viewModal = new bootstrap.Modal(document.getElementById('viewModal'));
+    
+    // 업로드 버튼 이벤트 리스너
+    document.getElementById('uploadButton').addEventListener('click', uploadResume);
+    
+    // 모달이 닫힐 때 폼 초기화
+    document.getElementById('uploadModal').addEventListener('hidden.bs.modal', function () {
+        document.getElementById('resumeForm').reset();
+        isUploading = false;
+    });
+});
+
+function addQuestionField() {
+    const container = document.getElementById('questionsContainer');
+    const questionCount = container.children.length;
+    
+    const questionGroup = document.createElement('div');
+    questionGroup.className = 'question-group mb-3 border p-3';
+    questionGroup.innerHTML = `
+        <div class="mb-2">
+            <label class="form-label">질문 ${questionCount + 1}</label>
+            <input type="text" class="form-control" name="questions[]" required>
+        </div>
+        <div class="mb-2">
+            <label class="form-label">답변 ${questionCount + 1}</label>
+            <textarea class="form-control" name="answers[]" rows="3" required></textarea>
+        </div>
+        <button type="button" class="btn btn-danger btn-sm" onclick="this.parentElement.remove()">삭제</button>
+    `;
+    
+    container.appendChild(questionGroup);
+}
+
+async function uploadResume() {
+    if (isUploading) return;
+    
+    const form = document.getElementById('resumeForm');
+    if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+    }
+    
+    isUploading = true;
+    const formData = new FormData(form);
+    
+    // 질문과 답변을 JSON으로 변환
+    const questions = Array.from(form.querySelectorAll('input[name="questions[]"]')).map(input => input.value);
+    const answers = Array.from(form.querySelectorAll('textarea[name="answers[]"]')).map(textarea => textarea.value);
+    const questionsData = questions.map((question, index) => ({
+        question: question,
+        answer: answers[index]
+    }));
+    
+    formData.append('questions_json', JSON.stringify(questionsData));
+    
+    try {
+        const response = await fetch('/resumes/upload', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            const modal = bootstrap.Modal.getInstance(document.getElementById('uploadModal'));
+            modal.hide();
+            alert(result.message || '이력서가 성공적으로 업로드되었습니다.');
+            window.location.reload();
+        } else {
+            alert(result.detail || '업로드 실패');
+            isUploading = false;
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('업로드 중 오류가 발생했습니다.');
+        isUploading = false;
+    }
+}
+
+async function viewResume(resumeId) {
+    try {
+        const response = await fetch(`/resumes/${resumeId}`);
+        if (response.ok) {
+            const data = await response.json();
+            const viewer = document.getElementById('resumeViewer');
+            
+            // 이력서 정보 표시
+            let html = `
+                <div class="mb-3">
+                    <h6>제목</h6>
+                    <p>${data.title}</p>
+                </div>
+                <div class="mb-3">
+                    <h6>채용공고</h6>
+                    <p>${data.job_posting.company_name} - ${data.job_posting.job_title}</p>
+                </div>
+                <div class="mb-3">
+                    <h6>상태</h6>
+                    <div class="d-flex align-items-center">
+                        <span class="badge me-2 ${getStatusBadgeClass(data.status)}">${data.status}</span>
+                        <div class="dropdown">
+                            <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                상태 변경
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="#" onclick="updateResumeStatus(${data.id}, '검토중')">검토중</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="updateResumeStatus(${data.id}, '열람중')">열람중</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="updateResumeStatus(${data.id}, '합격')">합격</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="updateResumeStatus(${data.id}, '불합격')">불합격</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <h6>생성일</h6>
+                    <p>${new Date(data.created_at).toLocaleDateString()}</p>
+                </div>`;
+
+            // 자기소개서 질문/답변 표시
+            if (data.questions && data.questions.length > 0) {
+                html += `
+                    <div class="mb-3">
+                        <h6>자기소개서 질문/답변</h6>
+                        ${data.questions.map((q, index) => `
+                            <div class="card mb-2">
+                                <div class="card-body">
+                                    <h6 class="card-subtitle mb-2 text-muted">질문 ${index + 1}</h6>
+                                    <p class="card-text">${q.question}</p>
+                                    <h6 class="card-subtitle mb-2 text-muted">답변</h6>
+                                    <p class="card-text">${q.answer}</p>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>`;
+            }
+
+            html += `
+                <div class="mb-3">
+                    <a href="${data.file_url}" class="btn btn-primary" target="_blank">파일 보기</a>
+                </div>`;
+            
+            viewer.innerHTML = html;
+            
+            const viewModal = new bootstrap.Modal(document.getElementById('viewModal'));
+            viewModal.show();
+        } else {
+            alert('이력서를 불러오는데 실패했습니다.');
+        }
+    } catch (error) {
+        alert('오류가 발생했습니다.');
+        console.error('Error:', error);
+    }
+}
+
+function getStatusBadgeClass(status) {
+    switch (status) {
+        case '합격':
+            return 'bg-success';
+        case '검토중':
+            return 'bg-warning';
+        case '불합격':
+            return 'bg-danger';
+        case '열람중':
+            return 'bg-info';
+        default:
+            return 'bg-secondary';
+    }
+}
+
+async function updateResumeStatus(resumeId, newStatus) {
+    try {
+        const formData = new FormData();
+        formData.append('status', newStatus);
+
+        const response = await fetch(`/resumes/${resumeId}/status`, {
+            method: 'PUT',
+            body: formData
+        });
+        
+        if (response.ok) {
+            window.location.reload();
+        } else {
+            alert('상태 업데이트에 실패했습니다.');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('오류가 발생했습니다.');
+    }
+}
+</script>
+{% endblock %}

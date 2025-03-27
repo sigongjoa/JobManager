@@ -1,0 +1,323 @@
+{% extends "base.html" %}
+
+{% block title %}자소서 관리{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>자소서 관리</h2>
+        <div>
+            <button class="btn btn-secondary me-2" data-bs-toggle="modal" data-bs-target="#exportModal">
+                <i class="bi bi-download"></i> Export
+            </button>
+            <a href="/resumes/upload" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> 자소서 업로드
+            </a>
+        </div>
+    </div>
+
+    <!-- 통계 카드 -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">전체 자소서</h5>
+                    <p class="card-text display-6">{{ stats.total }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">검토중</h5>
+                    <p class="card-text display-6">{{ stats.reviewing }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">열람중</h5>
+                    <p class="card-text display-6">{{ stats.in_progress }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">합격률</h5>
+                    <p class="card-text display-6">{{ "%.1f"|format(stats.success_rate) }}%</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 자소서 목록 테이블 -->
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead class="table-light">
+                <tr>
+                    <th style="width: 25%; padding: 15px;">제목</th>
+                    <th style="width: 20%; padding: 15px;">회사명</th>
+                    <th style="width: 15%; padding: 15px;">상태</th>
+                    <th style="width: 15%; padding: 15px;">업로드일</th>
+                    <th style="width: 25%; padding: 15px;">관리</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for resume in resumes %}
+                <tr>
+                    <td style="padding: 15px;">
+                        {% if resume.link %}
+                            <a href="{{ resume.link }}" target="_blank" class="text-decoration-none">
+                                {{ resume.title }} <i class="bi bi-box-arrow-up-right"></i>
+                            </a>
+                        {% else %}
+                            {{ resume.title }}
+                        {% endif %}
+                    </td>
+                    <td style="padding: 15px;">{{ resume.company_name }}</td>
+                    <td style="padding: 15px;">
+                        <div class="dropdown">
+                            <button class="btn btn-sm dropdown-toggle 
+                                {% if resume.status == '합격' %}btn-success
+                                {% elif resume.status == '불합격' %}btn-danger
+                                {% elif resume.status == '검토중' %}btn-warning
+                                {% else %}btn-info{% endif %}"
+                                type="button" 
+                                data-bs-toggle="dropdown"
+                                aria-expanded="false">
+                                {{ resume.status }}
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="#" onclick="updateResumeStatus({{ resume.id }}, '검토중')">검토중</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="updateResumeStatus({{ resume.id }}, '합격')">합격</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="updateResumeStatus({{ resume.id }}, '불합격')">불합격</a></li>
+                            </ul>
+                        </div>
+                    </td>
+                    <td style="padding: 15px;">{{ resume.created_at.strftime('%Y-%m-%d') }}</td>
+                    <td style="padding: 15px;">
+                        <div class="btn-group">
+                            <a href="/resume/{{ resume.id }}" class="btn btn-sm btn-outline-primary me-2">
+                                <i class="bi bi-eye"></i> 보기
+                            </a>
+                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteResume({{ resume.id }})">
+                                <i class="bi bi-trash"></i> 삭제
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- 수정 모달 -->
+<div class="modal fade" id="editModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">자소서 수정</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editForm" action="/resumes/update" method="POST">
+                    <input type="hidden" name="resume_id" id="editResumeId">
+                    <div class="mb-3">
+                        <label for="editTitle" class="form-label">제목</label>
+                        <input type="text" class="form-control" id="editTitle" name="title" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editCompanyName" class="form-label">회사명</label>
+                        <input type="text" class="form-control" id="editCompanyName" name="company_name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editLink" class="form-label">채용공고 링크</label>
+                        <input type="url" class="form-control" id="editLink" name="link">
+                    </div>
+                    <div class="mb-3">
+                        <label for="editStatus" class="form-label">상태</label>
+                        <select class="form-select" id="editStatus" name="status" required>
+                            <option value="검토중">검토중</option>
+                            <option value="열람중">열람중</option>
+                            <option value="합격">합격</option>
+                            <option value="불합격">불합격</option>
+                        </select>
+                    </div>
+                    <div class="text-end">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                        <button type="submit" class="btn btn-primary">저장</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Export 모달 -->
+<div class="modal fade" id="exportModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">자소서 내보내기</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="exportForm" onsubmit="handleExport(event)">
+                    <div class="mb-3">
+                        <label class="form-label">채용공고 선택</label>
+                        <select class="form-select" id="jobSelect" required>
+                            <option value="">채용공고를 선택하세요</option>
+                            {% for job in jobs %}
+                            <option value="{{ job.id }}">{{ job.company_name }} - {{ job.title }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="text-end">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                        <button type="submit" class="btn btn-primary">내보내기</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.dropdown-menu {
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    border: 1px solid rgba(0,0,0,0.1);
+    transform: translate(-80%, 0);
+}
+.table td, .table th {
+    vertical-align: middle;
+}
+.btn-group {
+    position: relative;
+}
+.btn-group .dropdown-toggle::after {
+    margin-left: 8px;
+}
+.btn-group .dropdown-menu {
+    margin-top: 5px;
+}
+.dropdown-item {
+    padding: 8px 16px;
+    white-space: nowrap;
+}
+.dropdown-item i {
+    margin-right: 8px;
+}
+.table-responsive {
+    overflow-x: visible;
+}
+.portfolio-list {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 10px;
+}
+.portfolio-list .form-check {
+    margin-bottom: 8px;
+}
+.portfolio-list .form-check:last-child {
+    margin-bottom: 0;
+}
+</style>
+
+<script>
+function openEditModal(id, title, company, link, status) {
+    document.getElementById('editResumeId').value = id;
+    document.getElementById('editTitle').value = title;
+    document.getElementById('editCompanyName').value = company;
+    document.getElementById('editLink').value = link;
+    document.getElementById('editStatus').value = status;
+    new bootstrap.Modal(document.getElementById('editModal')).show();
+}
+
+async function updateResumeStatus(resumeId, status) {
+    try {
+        const response = await fetch(`/resume/${resumeId}/status`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `status=${status}`
+        });
+        
+        if (response.ok) {
+            // 페이지 새로고침
+            window.location.reload();
+        } else {
+            throw new Error('상태 업데이트 실패');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('상태 업데이트 중 오류가 발생했습니다.');
+    }
+}
+
+async function deleteResume(resumeId) {
+    if (!confirm('정말 이 자소서를 삭제하시겠습니까?')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`/resume/${resumeId}`, {
+            method: 'DELETE',
+        });
+        
+        if (response.ok) {
+            // 페이지 새로고침
+            window.location.reload();
+        } else {
+            throw new Error('삭제 실패');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('삭제 중 오류가 발생했습니다.');
+    }
+}
+
+async function handleExport(event) {
+    event.preventDefault();
+    
+    const jobId = document.getElementById('jobSelect').value;
+    
+    try {
+        const response = await fetch('/api/export', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                job_id: jobId
+            })
+        });
+
+        if (response.ok) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'resume_export.json';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            
+            const modal = bootstrap.Modal.getInstance(document.getElementById('exportModal'));
+            modal.hide();
+        } else {
+            alert('내보내기에 실패했습니다.');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('내보내기 중 오류가 발생했습니다.');
+    }
+}
+</script>
+{% endblock %}

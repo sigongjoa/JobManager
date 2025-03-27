@@ -1,0 +1,38 @@
+.modal {
+    z-index: 1050 !important;
+}
+
+.modal-backdrop {
+    z-index: 1040 !important;
+}
+
+.dropdown-menu {
+    z-index: 1060 !important;
+}
+
+.modal-dialog {
+    max-width: 800px;
+    margin: 1.75rem auto;
+}
+
+.modal-content {
+    border-radius: 0.5rem;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.modal-header {
+    border-bottom: 1px solid #dee2e6;
+    background-color: #f8f9fa;
+    border-top-left-radius: 0.5rem;
+    border-top-right-radius: 0.5rem;
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+.modal-title {
+    margin-bottom: 0;
+    line-height: 1.5;
+    font-weight: 500;
+} 

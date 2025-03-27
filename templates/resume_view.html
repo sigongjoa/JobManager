@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}자소서 상세 보기{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <!-- 자소서 정보 -->
+        <div class="col-md-12 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">{{ resume.title }}</h5>
+                    <div class="d-flex align-items-center">
+                        <div class="dropdown me-2">
+                            <button class="btn btn-outline-primary dropdown-toggle" type="button" id="statusDropdown" data-bs-toggle="dropdown">
+                                {% if resume.status == '합격' %}
+                                    <span class="badge bg-success">합격</span>
+                                {% elif resume.status == '불합격' %}
+                                    <span class="badge bg-danger">불합격</span>
+                                {% elif resume.status == '검토중' %}
+                                    <span class="badge bg-warning">검토중</span>
+                                {% else %}
+                                    <span class="badge bg-info">{{ resume.status }}</span>
+                                {% endif %}
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="#" onclick="updateStatus('검토중')">검토중</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="updateStatus('합격')">합격</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="updateStatus('불합격')">불합격</a></li>
+                            </ul>
+                        </div>
+                        <a href="/resume/{{ resume.id }}/download" class="btn btn-primary">
+                            <i class="bi bi-download"></i> 다운로드
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if job_posting %}
+                    <div class="mb-3">
+                        <h6>채용공고 정보</h6>
+                        <p class="mb-1">회사: {{ job_posting.company_name }}</p>
+                        <p class="mb-1">직무: {{ job_posting.job_title }}</p>
+                        {% if job_posting.deadline %}
+                        <p class="mb-1">마감일: {{ job_posting.deadline }}</p>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    {% if questions %}
+                    <div class="mt-4">
+                        <h6>자기소개서 문항</h6>
+                        {% for question in questions %}
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <h6 class="card-subtitle mb-2 text-muted">문항 {{ loop.index }}</h6>
+                                <p class="card-text"><strong>Q.</strong> {{ question.question }}</p>
+                                <p class="card-text"><strong>A.</strong> {{ question.answer }}</p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    {% if content %}
+                    <div class="mt-4">
+                        <h6>파일 내용</h6>
+                        <div class="border p-3 bg-light">
+                            <pre>{{ content }}</pre>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+async function updateStatus(status) {
+    try {
+        const response = await fetch(`/resume/{{ resume.id }}/status`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `status=${status}`
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            // 상태 표시 업데이트
+            const statusDropdown = document.getElementById('statusDropdown');
+            let badgeClass = 'bg-info';
+            if (status === '합격') badgeClass = 'bg-success';
+            else if (status === '불합격') badgeClass = 'bg-danger';
+            else if (status === '검토중') badgeClass = 'bg-warning';
+            
+            statusDropdown.innerHTML = `<span class="badge ${badgeClass}">${status}</span>`;
+            
+            // 성공 메시지 표시
+            alert('상태가 업데이트되었습니다.');
+        } else {
+            throw new Error('상태 업데이트 실패');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('상태 업데이트 중 오류가 발생했습니다.');
+    }
+}
+</script>
+{% endblock %} 

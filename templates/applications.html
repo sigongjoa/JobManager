@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}지원 결과 - 취업 관리 시스템{% endblock %}
+{% block content %}
+  <div class="d-flex justify-content-between align-items-center">
+    <h2>지원 결과</h2>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addApplicationModal">
+      지원 결과 추가
+    </button>
+  </div>
+  <div class="mt-4">
+    <div class="table-responsive">
+      <table class="table table-striped">
+        <thead>
+          <tr>
+            <th>회사</th>
+            <th>채용 공고</th>
+            <th>자소서</th>
+            <th>상태</th>
+            <th>지원 날짜</th>
+            <th>액션</th>
+          </tr>
+        </thead>
+        <tbody id="applications-list">
+          <tr>
+            <td colspan="6" class="text-center">로딩 중...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <!-- 지원 결과 추가 모달 등 필요한 모달 코드 추가 -->
+{% endblock %}

@@ -1,0 +1,370 @@
+{% extends "base.html" %}
+
+{% block title %}채용 공고{% endblock %}
+
+{% block content %}
+
+<div class="container mt-4">
+    <h2>채용공고 관리</h2>
+    
+    <!-- 채용공고 등록 폼 -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">채용공고 등록</h5>
+            <form id="jobForm" class="mt-3">
+                <div class="mb-3">
+                    <label for="url" class="form-label">채용공고 URL</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="url" name="url" required>
+                        <button type="submit" class="btn btn-primary">등록</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 채용공고 목록 -->
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">등록된 채용공고 목록</h5>
+            <div class="table-responsive">
+                <table class="table table-hover" id="jobTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>회사명</th>
+                            <th>채용공고명</th>
+                            <th>마감일</th>
+                            <th>링크</th>
+                            <th>지원 상태</th>
+                            <th>작업</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for job in job_postings %}
+                        <tr>
+                            <td>{{ job.id }}</td>
+                            <td class="job-detail-link" data-id="{{ job.id }}" style="cursor: pointer;">{{ job.company_name }}</td>
+                            <td class="job-detail-link" data-id="{{ job.id }}" style="cursor: pointer;">{{ job.job_title }}</td>
+                            <td>{{ job.deadline }}</td>
+                            <td>
+                                <a href="{{ job.link }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-external-link-alt"></i>
+                                </a>
+                            </td>
+                            <td>
+                                <span class="badge {% if job.application_status == '미지원' %}bg-secondary{% elif job.application_status == '지원중' %}bg-primary{% elif job.application_status == '서류합격' %}bg-success{% elif job.application_status == '최종합격' %}bg-success{% else %}bg-warning{% endif %}">
+                                    {{ job.application_status }}
+                                </span>
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-danger delete-job" data-id="{{ job.id }}">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 채용공고 상세 정보 모달 -->
+<div class="modal fade" id="jobDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">채용공고 상세정보</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="job-detail-content">
+                    <div class="company-info mb-4">
+                        <h3 id="modalCompanyName" class="mb-2"></h3>
+                        <h4 id="modalJobTitle" class="text-primary mb-3"></h4>
+                    </div>
+                    <div class="job-info mb-4">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>마감일:</strong> <span id="modalDeadline"></span></p>
+                                <p><strong>경력:</strong> <span id="modalExperience"></span></p>
+                                <p><strong>학력:</strong> <span id="modalEducation"></span></p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>고용형태:</strong> <span id="modalEmploymentType"></span></p>
+                                <p><strong>근무지:</strong> <span id="modalLocation"></span></p>
+                                <p><strong>급여:</strong> <span id="modalSalary"></span></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="job-description mb-4">
+                        <h5>상세 내용</h5>
+                        <div id="modalDescription" class="mt-2"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <a id="modalJobLink" href="#" target="_blank" class="btn btn-primary">채용공고 원문 보기</a>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 채용공고 등록 폼 제출 처리
+    const jobForm = document.getElementById('jobForm');
+    jobForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const url = document.getElementById('url').value;
+        
+        try {
+            const response = await fetch('/api/crawl/saramin', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `url=${encodeURIComponent(url)}`
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok) {
+                alert('채용공고가 성공적으로 등록되었습니다.');
+                document.getElementById('url').value = '';
+                // 페이지 새로고침
+                window.location.reload();
+            } else {
+                alert(result.message || '채용공고 등록에 실패했습니다.');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('채용공고 등록 중 오류가 발생했습니다.');
+        }
+    });
+
+    // 채용공고 상세 정보 표시
+    document.querySelectorAll('.job-detail-link').forEach(element => {
+        element.addEventListener('click', async function() {
+            const jobId = this.dataset.id;
+            try {
+                const response = await fetch(`/api/jobs/${jobId}`);
+                const job = await response.json();
+                
+                document.getElementById('modalCompanyName').textContent = job.company_name;
+                document.getElementById('modalJobTitle').textContent = job.job_title;
+                document.getElementById('modalDeadline').textContent = job.deadline || '상시채용';
+                document.getElementById('modalExperience').textContent = job.experience || '미지정';
+                document.getElementById('modalEducation').textContent = job.education || '미지정';
+                document.getElementById('modalEmploymentType').textContent = job.employment_type || '미지정';
+                document.getElementById('modalLocation').textContent = job.location || '미지정';
+                document.getElementById('modalSalary').textContent = job.salary || '회사 내규에 따름';
+                document.getElementById('modalDescription').innerHTML = job.description ? job.description.replace(/\n/g, '<br>') : '상세 내용이 없습니다.';
+                document.getElementById('modalJobLink').href = job.link;
+                
+                new bootstrap.Modal(document.getElementById('jobDetailModal')).show();
+            } catch (error) {
+                console.error('Error:', error);
+                alert('채용공고 정보를 불러오는데 실패했습니다.');
+            }
+        });
+    });
+
+    // 채용공고 삭제 처리
+    document.querySelectorAll('.delete-job').forEach(button => {
+        button.addEventListener('click', async function() {
+            if (confirm('정말 이 채용공고를 삭제하시겠습니까?')) {
+                const jobId = this.dataset.id;
+                try {
+                    const response = await fetch(`/job/${jobId}`, {
+                        method: 'DELETE'
+                    });
+                    
+                    if (response.ok) {
+                        alert('채용공고가 삭제되었습니다.');
+                        window.location.reload();
+                    } else {
+                        alert('채용공고 삭제에 실패했습니다.');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('채용공고 삭제 중 오류가 발생했습니다.');
+                }
+            }
+        });
+    });
+});
+</script>
+
+<style>
+.job-section {
+  margin-bottom: 2rem;
+  padding: 1rem;
+  background-color: #f8f9fa;
+  border-radius: 0.5rem;
+}
+
+.section-title {
+  color: #0d6efd;
+  margin-bottom: 1rem;
+  font-weight: 600;
+}
+
+.section-content {
+  white-space: pre-line;
+  color: #212529;
+}
+
+.job-title-link {
+  color: #0d6efd !important;
+  text-decoration: none;
+  transition: color 0.2s;
+  cursor: pointer;
+}
+
+.job-title-link:hover {
+  color: #0a58ca !important;
+  text-decoration: underline;
+}
+
+#crawlResult {
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  padding: 20px;
+  margin-top: 20px;
+}
+
+#description {
+  max-height: 300px;
+  overflow-y: auto;
+  padding: 10px;
+  background-color: white;
+  border-radius: 4px;
+}
+</style>
+
+{% if platform == "saramin" %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">채용공고 등록</h5>
+            <form id="jobForm" class="mt-3">
+                <div class="form-group">
+                    <label for="jobUrl">채용공고 URL</label>
+                    <input type="url" class="form-control" id="jobUrl" name="url" required
+                           placeholder="https://www.saramin.co.kr/zf_user/jobs/relay/view?rec_idx=...">
+                </div>
+                <button type="submit" class="btn btn-primary mt-3">등록하기</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="mt-4" id="jobsTableContainer">
+        <!-- 채용공고 테이블이 여기에 로드됩니다 -->
+    </div>
+</div>
+
+<!-- 채용공고 상세 정보 모달 -->
+<div class="modal fade" id="jobDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">채용공고 상세정보</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="jobDetailContent">
+                <!-- 채용공고 상세 내용이 여기에 로드됩니다 -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    loadJobsTable();
+    
+    const jobForm = document.getElementById('jobForm');
+    jobForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const url = document.getElementById('jobUrl').value;
+        
+        try {
+            const response = await fetch('/api/crawl/saramin', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `url=${encodeURIComponent(url)}`
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok) {
+                alert('채용공고가 성공적으로 등록되었습니다.');
+                loadJobsTable();
+                jobForm.reset();
+            } else {
+                alert(result.message || '채용공고 등록에 실패했습니다.');
+            }
+        } catch (error) {
+            alert('오류가 발생했습니다: ' + error.message);
+        }
+    });
+});
+
+function loadJobsTable() {
+    fetch(`/jobs/table/saramin`)
+        .then(response => response.text())
+        .then(html => {
+            document.getElementById('jobsTableContainer').innerHTML = html;
+        })
+        .catch(error => {
+            console.error('Error loading jobs table:', error);
+        });
+}
+
+function loadJobDetail(jobId) {
+    fetch(`/api/jobs/${jobId}`)
+        .then(response => response.json())
+        .then(job => {
+            const content = `
+                <div class="job-detail">
+                    <h4>${job.company_name}</h4>
+                    <h5 class="text-primary">${job.job_title}</h5>
+                    <hr>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>경력:</strong> ${job.experience || '미지정'}</p>
+                            <p><strong>학력:</strong> ${job.education || '미지정'}</p>
+                            <p><strong>고용형태:</strong> ${job.employment_type || '미지정'}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>근무지역:</strong> ${job.location || '미지정'}</p>
+                            <p><strong>급여:</strong> ${job.salary || '미지정'}</p>
+                            <p><strong>마감일:</strong> ${job.deadline || '미지정'}</p>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <h6 class="text-primary">복리후생</h6>
+                        <p>${job.welfare_benefits || '정보 없음'}</p>
+                    </div>
+                    <div class="mt-3">
+                        <a href="${job.url}" target="_blank" class="btn btn-primary">원문 보기</a>
+                    </div>
+                </div>
+            `;
+            document.getElementById('jobDetailContent').innerHTML = content;
+            new bootstrap.Modal(document.getElementById('jobDetailModal')).show();
+        })
+        .catch(error => {
+            console.error('Error loading job detail:', error);
+            alert('채용공고 상세정보를 불러오는데 실패했습니다.');
+        });
+}
+</script>
+{% endif %}
+
+{% endblock %}

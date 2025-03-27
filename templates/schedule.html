@@ -1,0 +1,229 @@
+{% extends "base.html" %}
+
+{% block title %}일정 관리{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>일정 관리</h2>
+        <button type="button" class="btn btn-primary" onclick="openAddScheduleModal()">
+            새 일정 추가
+        </button>
+    </div>
+    <div id="calendar"></div>
+</div>
+
+<!-- 일정 추가 모달 -->
+<div class="modal fade" id="addScheduleModal" tabindex="-1" aria-labelledby="addScheduleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addScheduleModalLabel">새 일정 추가</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="scheduleForm">
+                    <div class="mb-3">
+                        <label for="job_posting_id" class="form-label">채용공고 *</label>
+                        <select class="form-select" id="job_posting_id" name="job_posting_id" required>
+                            <option value="">선택하세요</option>
+                            {% for job in jobs %}
+                            <option value="{{ job.id }}">{{ job.company_name }} - {{ job.job_title }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="title" class="form-label">일정 제목 *</label>
+                        <input type="text" class="form-control" id="title" name="title" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="event_type" class="form-label">일정 유형 *</label>
+                        <select class="form-select" id="event_type" name="event_type" required>
+                            <option value="면접">면접</option>
+                            <option value="시험">시험</option>
+                            <option value="서류마감">서류마감</option>
+                            <option value="기타">기타</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="start_date" class="form-label">시작 일시 *</label>
+                        <input type="datetime-local" class="form-control" id="start_date" name="start_date" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="end_date" class="form-label">종료 일시</label>
+                        <input type="datetime-local" class="form-control" id="end_date" name="end_date">
+                    </div>
+                    <div class="mb-3">
+                        <label for="location" class="form-label">장소</label>
+                        <input type="text" class="form-control" id="location" name="location">
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">설명</label>
+                        <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                <button type="button" class="btn btn-primary" onclick="saveSchedule()">저장</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 일정 상세 보기 모달 -->
+<div class="modal fade" id="eventDetailModal" tabindex="-1" aria-labelledby="eventDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="eventDetailModalLabel">일정 상세</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="eventDetailContent">
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
+<script>
+let calendar;
+
+// 일정 추가 모달 열기
+function openAddScheduleModal() {
+    console.log('Opening add schedule modal');
+    const modal = new bootstrap.Modal(document.getElementById('addScheduleModal'));
+    modal.show();
+}
+
+// 일정 저장
+async function saveSchedule() {
+    console.log('Saving schedule...');
+    const form = document.getElementById('scheduleForm');
+    
+    if (!form.checkValidity()) {
+        console.log('Form validation failed');
+        form.reportValidity();
+        return;
+    }
+
+    // 폼 데이터 수집
+    const formData = new FormData(form);
+    const data = {
+        job_posting_id: parseInt(formData.get('job_posting_id')),
+        title: formData.get('title'),
+        event_type: formData.get('event_type'),
+        start_date: formData.get('start_date'),
+        end_date: formData.get('end_date') || null,
+        location: formData.get('location') || null,
+        description: formData.get('description') || null
+    };
+
+    // 데이터 유효성 검사
+    if (!data.job_posting_id || isNaN(data.job_posting_id)) {
+        console.error('Invalid job_posting_id:', data.job_posting_id);
+        alert('채용공고를 선택해주세요.');
+        return;
+    }
+
+    try {
+        console.log('Sending request to server...', data);
+        const response = await fetch('/api/schedules', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        });
+
+        console.log('Server response status:', response.status);
+        const result = await response.json();
+        console.log('Server response:', result);
+
+        if (!response.ok) {
+            throw new Error(result.detail || '일정 추가에 실패했습니다.');
+        }
+
+        const modal = bootstrap.Modal.getInstance(document.getElementById('addScheduleModal'));
+        modal.hide();
+        alert('일정이 성공적으로 추가되었습니다.');
+        calendar.refetchEvents();
+    } catch (error) {
+        console.error('Error:', error);
+        alert(error.message || '오류가 발생했습니다.');
+    }
+}
+
+// 캘린더 초기화
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Initializing calendar...');
+    const calendarEl = document.getElementById('calendar');
+    
+    if (!calendarEl) {
+        console.error('Calendar element not found!');
+        return;
+    }
+
+    calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        headerToolbar: {
+            left: 'prev,next today',
+            center: 'title',
+            right: 'dayGridMonth,timeGridWeek,timeGridDay'
+        },
+        locale: 'ko',
+        events: '/api/schedules',
+        eventClick: function(info) {
+            console.log('Event clicked:', info.event);
+            const eventDetailContent = document.getElementById('eventDetailContent');
+            eventDetailContent.innerHTML = `
+                <div class="mb-3">
+                    <strong>일정:</strong> ${info.event.title}
+                </div>
+                <div class="mb-3">
+                    <strong>유형:</strong> ${info.event.extendedProps.event_type || '없음'}
+                </div>
+                <div class="mb-3">
+                    <strong>시작:</strong> ${new Date(info.event.start).toLocaleString()}
+                </div>
+                <div class="mb-3">
+                    <strong>종료:</strong> ${info.event.end ? new Date(info.event.end).toLocaleString() : '없음'}
+                </div>
+                <div class="mb-3">
+                    <strong>장소:</strong> ${info.event.extendedProps.location || '없음'}
+                </div>
+                <div class="mb-3">
+                    <strong>설명:</strong> ${info.event.extendedProps.description || '없음'}
+                </div>
+            `;
+            
+            const eventDetailModal = new bootstrap.Modal(document.getElementById('eventDetailModal'));
+            eventDetailModal.show();
+        },
+        eventClassNames: function(arg) {
+            switch (arg.event.extendedProps.event_type) {
+                case '면접':
+                    return ['bg-primary'];
+                case '시험':
+                    return ['bg-warning'];
+                case '서류마감':
+                    return ['bg-danger'];
+                default:
+                    return ['bg-info'];
+            }
+        }
+    });
+
+    console.log('Rendering calendar...');
+    calendar.render();
+});
+
+// 모달이 닫힐 때 폼 초기화
+document.getElementById('addScheduleModal').addEventListener('hidden.bs.modal', function() {
+    console.log('Resetting form...');
+    document.getElementById('scheduleForm').reset();
+});
+</script>
+{% endblock %} 

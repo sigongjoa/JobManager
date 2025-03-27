@@ -1,0 +1,27 @@
+<!-- DB 복원 모달 -->
+<div class="modal fade" id="restoreModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">DB 복원</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="restoreForm" onsubmit="handleRestore(event)">
+                    <div class="mb-3">
+                        <label for="backupFile" class="form-label">백업 파일 선택</label>
+                        <input type="file" class="form-control" id="backupFile" accept=".json" required>
+                    </div>
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        주의: DB 복원 시 기존 데이터가 모두 삭제되고 백업 파일의 데이터로 대체됩니다.
+                    </div>
+                    <div class="text-end">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                        <button type="submit" class="btn btn-danger">복원</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div> 

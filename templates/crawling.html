@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+
+{% block title %}채용 공고 크롤링{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2 class="mb-4">채용 공고 크롤링</h2>
+    
+    <!-- 단일 URL 크롤링 -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">채용 공고 크롤링</h5>
+        </div>
+        <div class="card-body">
+            <form id="crawlerForm" class="crawler-form mb-4">
+                <input type="hidden" name="platform" value="saramin">
+                <div class="input-group mb-3">
+                    <input type="url" id="urlInput" name="url" class="form-control" placeholder="사람인 채용공고 URL을 입력하세요" required>
+                    <button type="submit" id="crawlButton" class="btn btn-primary">크롤링</button>
+                    <button type="button" id="testButton" class="btn btn-secondary">테스트 데이터 확인</button>
+                </div>
+            </form>
+            
+            <!-- 로딩 표시 -->
+            <div id="loadingIndicator" class="text-center d-none">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">크롤링 중입니다...</p>
+            </div>
+
+            <!-- 결과 테이블 -->
+            <div id="resultsTable" class="table-responsive d-none">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>회사명</th>
+                            <th>공고 제목</th>
+                            <th>마감일</th>
+                            <th>경력</th>
+                            <th>학력</th>
+                            <th>고용형태</th>
+                            <th>근무지</th>
+                            <th>급여</th>
+                            <th>링크</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultsBody">
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 에러 메시지 -->
+            <div id="errorMessage" class="alert alert-danger d-none" role="alert">
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('crawlerForm');
+    const urlInput = document.getElementById('urlInput');
+    const crawlButton = document.getElementById('crawlButton');
+    const testButton = document.getElementById('testButton');
+    const loadingIndicator = document.getElementById('loadingIndicator');
+    const resultsTable = document.getElementById('resultsTable');
+    const resultsBody = document.getElementById('resultsBody');
+    const errorMessage = document.getElementById('errorMessage');
+
+    // 크롤링 폼 제출
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const url = urlInput.value.trim();
+        if (!url) {
+            showError('URL을 입력해주세요.');
+            return;
+        }
+
+        // UI 초기화
+        hideError();
+        showLoading();
+        hideResults();
+
+        try {
+            const response = await fetch('/api/crawl', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    url: url,
+                    platform: 'saramin'
+                })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.detail || '크롤링 중 오류가 발생했습니다.');
+            }
+
+            // 결과 표시
+            displayResults(data.jobs);
+            urlInput.value = '';
+
+        } catch (error) {
+            showError(error.message);
+        } finally {
+            hideLoading();
+        }
+    });
+
+    // 테스트 버튼 클릭
+    testButton.addEventListener('click', async function() {
+        urlInput.value = 'https://test.com/job';
+        form.dispatchEvent(new Event('submit'));
+    });
+
+    // 유틸리티 함수들
+    function showLoading() {
+        loadingIndicator.classList.remove('d-none');
+        crawlButton.disabled = true;
+    }
+
+    function hideLoading() {
+        loadingIndicator.classList.add('d-none');
+        crawlButton.disabled = false;
+    }
+
+    function showError(message) {
+        errorMessage.textContent = message;
+        errorMessage.classList.remove('d-none');
+    }
+
+    function hideError() {
+        errorMessage.textContent = '';
+        errorMessage.classList.add('d-none');
+    }
+
+    function hideResults() {
+        resultsTable.classList.add('d-none');
+        resultsBody.innerHTML = '';
+    }
+
+    function displayResults(jobs) {
+        resultsBody.innerHTML = '';
+        
+        jobs.forEach(job => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${job.company || ''}</td>
+                <td>${job.title || ''}</td>
+                <td>${job.deadline || ''}</td>
+                <td>${job.experience || ''}</td>
+                <td>${job.education || ''}</td>
+                <td>${job.employment_type || ''}</td>
+                <td>${job.location || ''}</td>
+                <td>${job.salary || ''}</td>
+                <td><a href="${job.link}" target="_blank">링크</a></td>
+            `;
+            resultsBody.appendChild(row);
+        });
+
+        resultsTable.classList.remove('d-none');
+    }
+});
+</script>
+{% endblock %} 

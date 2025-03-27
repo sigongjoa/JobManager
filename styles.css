@@ -1,0 +1,157 @@
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f8f9fa;
+}
+
+.navbar {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.card {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+.table {
+    background-color: white;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.table th {
+    background-color: #f8f9fa;
+}
+
+.btn {
+    border-radius: 4px;
+}
+
+.btn-primary {
+    background-color: #0d6efd;
+}
+
+.btn-success {
+    background-color: #198754;
+}
+
+.btn-danger {
+    background-color: #dc3545;
+}
+
+.btn-warning {
+    background-color: #ffc107;
+}
+
+.modal-content {
+    border-radius: 8px;
+}
+
+.modal-header {
+    background-color: #f8f9fa;
+}
+
+.page {
+    min-height: 80vh;
+}
+
+.loading-spinner {
+    display: inline-block;
+    width: 2rem;
+    height: 2rem;
+    border: 0.25rem solid rgba(0, 0, 0, 0.1);
+    border-right-color: #0d6efd;
+    border-radius: 50%;
+    animation: spinner 1s linear infinite;
+}
+
+@keyframes spinner {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.toast {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+}
+
+.job-description, .resume-content, .feedback-content {
+    white-space: pre-line;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.status-badge {
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.status-applied {
+    background-color: #cff4fc;
+    color: #055160;
+}
+
+.status-document-passed {
+    background-color: #d1e7dd;
+    color: #0f5132;
+}
+
+.status-interview-passed {
+    background-color: #e2e3e5;
+    color: #41464b;
+}
+
+.status-final-passed {
+    background-color: #d1e7dd;
+    color: #0f5132;
+}
+
+.status-failed {
+    background-color: #f8d7da;
+    color: #842029;
+}
+
+.compare-container {
+    display: flex;
+    gap: 20px;
+}
+
+.compare-panel {
+    flex: 1;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 15px;
+    background-color: white;
+}
+
+.highlight {
+    background-color: #fff3cd;
+    padding: 2px;
+    border-radius: 3px;
+}
+
+.dashboard-card {
+    transition: transform 0.3s;
+}
+
+.dashboard-card:hover {
+    transform: translateY(-5px);
+}
+
+.nav-link {
+    cursor: pointer;
+}
+
+.nav-link.active {
+    font-weight: bold;
+}

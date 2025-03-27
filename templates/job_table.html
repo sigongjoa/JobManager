@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>채용공고 테이블</h2>
+        <div class="btn-group">
+            <a href="/jobs/table/linkedin" class="btn btn-outline-primary {% if platform == 'LinkedIn' %}active{% endif %}">LinkedIn</a>
+            <a href="/jobs/table/jobkorea" class="btn btn-outline-primary {% if platform == 'JobKorea' %}active{% endif %}">JobKorea</a>
+            <a href="/jobs/table/wanted" class="btn btn-outline-primary {% if platform == 'Wanted' %}active{% endif %}">Wanted</a>
+        </div>
+    </div>
+
+    <div class="alert alert-info">
+        {{ platform }} - 총 {{ total_jobs }}개의 채용공고가 있습니다.
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-striped table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th>번호</th>
+                    <th>회사명</th>
+                    <th>채용공고명</th>
+                    <th>마감일</th>
+                    <th>상태</th>
+                    <th>등록일</th>
+                    <th>액션</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for job in job_postings %}
+                <tr>
+                    <td>{{ total_jobs - (current_page - 1) * page_size - loop.index0 }}</td>
+                    <td>{{ job.company_name }}</td>
+                    <td>
+                        <a href="#" data-bs-toggle="modal" data-bs-target="#jobModal-{{ job.id }}">
+                            {{ job.job_title }}
+                        </a>
+                    </td>
+                    <td>{{ job.deadline }}</td>
+                    <td>
+                        <span class="badge {% if job.applied %}bg-success{% else %}bg-secondary{% endif %}">
+                            {% if job.applied %}지원완료{% else %}미지원{% endif %}
+                        </span>
+                    </td>
+                    <td>{{ job.created_at.strftime('%Y-%m-%d') if job.created_at else '-' }}</td>
+                    <td>
+                        <div class="btn-group">
+                            <a href="{{ job.link }}" class="btn btn-sm btn-outline-primary" target="_blank">원문</a>
+                            <form action="/jobs/toggle" method="POST" class="d-inline">
+                                <input type="hidden" name="job_id" value="{{ job.id }}">
+                                <button type="submit" class="btn btn-sm {% if job.applied %}btn-success{% else %}btn-outline-success{% endif %}">
+                                    {% if job.applied %}완료{% else %}지원{% endif %}
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+
+                <!-- 상세 정보 모달 -->
+                <div class="modal fade" id="jobModal-{{ job.id }}" tabindex="-1">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">{{ job.job_title }}</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <strong>회사:</strong> {{ job.company_name }}
+                                </div>
+                                <div class="mb-3">
+                                    <strong>마감일:</strong> {{ job.deadline }}
+                                </div>
+                                <div class="mb-3">
+                                    <strong>상세 설명:</strong>
+                                    <pre class="mt-2" style="white-space: pre-wrap; font-family: inherit;">{{ job.description or '상세 설명 없음' }}</pre>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <a href="{{ job.link }}" class="btn btn-primary" target="_blank">원문 보기</a>
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if total_pages > 1 %}
+    <nav aria-label="Page navigation" class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if current_page > 1 %}
+            <li class="page-item">
+                <a class="page-link" href="{{ platform_url }}?page={{ current_page - 1 }}">&laquo; 이전</a>
+            </li>
+            {% endif %}
+            
+            {% for p in range(1, total_pages + 1) %}
+            <li class="page-item {% if p == current_page %}active{% endif %}">
+                <a class="page-link" href="{{ platform_url }}?page={{ p }}">{{ p }}</a>
+            </li>
+            {% endfor %}
+            
+            {% if current_page < total_pages %}
+            <li class="page-item">
+                <a class="page-link" href="{{ platform_url }}?page={{ current_page + 1 }}">다음 &raquo;</a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %} 

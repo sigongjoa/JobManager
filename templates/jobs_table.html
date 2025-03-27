@@ -1,0 +1,73 @@
+{% if platform == "saramin" %}
+<div class="table-responsive">
+    <table class="table table-hover">
+        <thead class="table-light">
+            <tr>
+                <th>회사명</th>
+                <th>채용공고</th>
+                <th>근무조건</th>
+                <th>마감일</th>
+                <th>작업</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for job in jobs %}
+            <tr>
+                <td>
+                    <strong>{{ job.company_name }}</strong>
+                </td>
+                <td>
+                    <div>{{ job.job_title }}</div>
+                    <small class="text-muted">{{ job.location }}</small>
+                </td>
+                <td>
+                    <div><small>경력: {{ job.experience or '미지정' }}</small></div>
+                    <div><small>학력: {{ job.education or '미지정' }}</small></div>
+                    <div><small>고용형태: {{ job.employment_type or '미지정' }}</small></div>
+                </td>
+                <td>
+                    {% if job.deadline %}
+                    <span class="badge bg-info">{{ job.deadline }}</span>
+                    {% else %}
+                    <span class="badge bg-secondary">상시채용</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <button class="btn btn-sm btn-outline-primary" onclick="loadJobDetail('{{ job.id }}')">상세보기</button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="deleteJob('{{ job.id }}')">삭제</button>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="5" class="text-center">등록된 채용공고가 없습니다.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script>
+async function deleteJob(jobId) {
+    if (!confirm('이 채용공고를 삭제하시겠습니까?')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/jobs/${jobId}`, {
+            method: 'DELETE'
+        });
+        
+        if (response.ok) {
+            alert('채용공고가 삭제되었습니다.');
+            loadJobsTable();
+        } else {
+            const data = await response.json();
+            alert(data.message || '채용공고 삭제에 실패했습니다.');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('채용공고 삭제 중 오류가 발생했습니다.');
+    }
+}
+</script>
+{% endif %} 

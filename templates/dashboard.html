@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+{% block title %}대시보드{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">대시보드</h2>
+
+    <!-- 통계 카드 -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">지원 현황</h6>
+                    <div class="d-flex flex-column">
+                        <div class="mb-2">서류합격률 <span class="text-success">{{ "%.1f"|format(stats.document_pass_rate) }}%</span></div>
+                        <div class="mb-2">면접진행률 <span class="text-info">{{ "%.1f"|format(stats.interview_rate) }}%</span></div>
+                        <div>최종합격 <span class="text-primary">{{ stats.final_pass }}</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">회사/공고 통계</h6>
+                    <div class="d-flex flex-column">
+                        <div class="mb-2">총 회사 수 <span class="text-primary">{{ stats.total_companies }}</span></div>
+                        <div class="mb-2">총 공고 수 <span class="text-info">{{ stats.total_jobs }}</span></div>
+                        <div class="mb-2">미지원 공고 <span class="text-warning">{{ stats.pending_jobs }}</span></div>
+                        <div>마감 임박 <span class="text-danger">{{ stats.urgent_jobs }}</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">최근 1주일</h6>
+                    <div class="d-flex flex-column">
+                        <div class="mb-2">신규 등록 <span class="text-primary">{{ stats.weekly_new_jobs }}</span></div>
+                        <div class="mb-2">서류 통과 <span class="text-success">{{ stats.weekly_document_pass }}</span></div>
+                        <div>면접 진행 <span class="text-info">{{ stats.weekly_interviews }}</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">자기소개서</h6>
+                    <div class="d-flex flex-column">
+                        <div class="mb-2">합격률 <span class="text-success">{{ "%.1f"|format(stats.resume_success_rate) }}%</span></div>
+                        <div class="mb-2">검토중 <span class="text-warning">{{ stats.reviewing_resumes }}</span></div>
+                        <div>피드백 필요 <span class="text-danger">{{ stats.feedback_needed }}</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 차트 -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">지원 단계별 현황</h5>
+                    <canvas id="statusChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">월별 지원 추이</h5>
+                    <canvas id="monthlyChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 다가오는 일정 -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title mb-0">다가오는 일정</h5>
+        </div>
+        <div class="card-body">
+            {% if upcoming_schedules and upcoming_schedules|length > 0 %}
+            <div class="list-group">
+                {% for schedule in upcoming_schedules %}
+                <div class="list-group-item">
+                    <div class="d-flex w-100 justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-1">{{ schedule.title }}</h6>
+                            {% if schedule.job_posting.company_name or schedule.job_posting.job_title %}
+                            <p class="mb-1 text-muted">
+                                {{ schedule.job_posting.company_name }}
+                                {% if schedule.job_posting.job_title and schedule.job_posting.job_title != "정보 없음" %}
+                                - {{ schedule.job_posting.job_title }}
+                                {% endif %}
+                            </p>
+                            {% endif %}
+                        </div>
+                        <span class="badge {% if schedule.event_type == '면접' %}bg-primary
+                                     {% elif schedule.event_type == '시험' %}bg-warning text-dark
+                                     {% elif schedule.event_type == '서류마감' %}bg-danger
+                                     {% else %}bg-info{% endif %}">
+                            {{ schedule.event_type }}
+                        </span>
+                    </div>
+                    <div class="mt-2 small text-muted">
+                        <div class="row">
+                            <div class="col-md-6">
+                                {% if schedule.start_date %}
+                                <i class="bi bi-calendar"></i> 시작: {{ schedule.start_date.strftime('%Y-%m-%d %H:%M') }}
+                                {% endif %}
+                                {% if schedule.end_date %}
+                                <br><i class="bi bi-calendar-check"></i> 종료: {{ schedule.end_date.strftime('%Y-%m-%d %H:%M') }}
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                {% if schedule.location %}
+                                <i class="bi bi-geo-alt"></i> {{ schedule.location }}<br>
+                                {% endif %}
+                                {% if schedule.description %}
+                                <i class="bi bi-info-circle"></i> {{ schedule.description }}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-muted mb-0">예정된 일정이 없습니다.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js 스크립트 -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 지원 단계별 현황 차트
+    const statusCtx = document.getElementById('statusChart').getContext('2d');
+    new Chart(statusCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['미지원', '서류검토중', '서류합격', '면접예정', '면접완료', '최종합격', '불합격'],
+            datasets: [{
+                data: {{ status_counts | tojson }},
+                backgroundColor: [
+                    '#9e9e9e',  // 미지원 - 회색
+                    '#ffd700',  // 서류검토중 - 금색
+                    '#4caf50',  // 서류합격 - 초록색
+                    '#2196f3',  // 면접예정 - 파란색
+                    '#9c27b0',  // 면접완료 - 보라색
+                    '#00bcd4',  // 최종합격 - 청록색
+                    '#f44336'   // 불합격 - 빨간색
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+
+    // 월별 지원 추이 차트
+    const monthlyCtx = document.getElementById('monthlyChart').getContext('2d');
+    new Chart(monthlyCtx, {
+        type: 'line',
+        data: {
+            labels: {{ monthly_labels | tojson }},
+            datasets: [{
+                label: '지원 건수',
+                data: {{ monthly_counts | tojson }},
+                borderColor: '#2196f3',
+                backgroundColor: 'rgba(33, 150, 243, 0.1)',
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,350 @@
+{% extends "base.html" %}
+{% block title %}채용공고 목록{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>{{ platform }} 채용공고 목록</h2>
+        <div class="btn-group">
+            <a href="/jobs/linkedin" class="btn btn-outline-primary {% if platform == 'LinkedIn' %}active{% endif %}">LinkedIn</a>
+            <a href="/jobs/jobkorea" class="btn btn-outline-primary {% if platform == 'JobKorea' %}active{% endif %}">JobKorea</a>
+            <a href="/jobs/wanted" class="btn btn-outline-primary {% if platform == 'Wanted' %}active{% endif %}">Wanted</a>
+        </div>
+    </div>
+
+    <div class="alert alert-info">
+        총 {{ total_jobs }}개의 채용공고가 있습니다.
+    </div>
+
+    <!-- 필터 및 검색 섹션 -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <select class="form-select" id="platformFilter">
+                <option value="all">전체 플랫폼</option>
+                <option value="linkedin">LinkedIn</option>
+                <option value="wanted">Wanted</option>
+                <option value="jobkorea">JobKorea</option>
+            </select>
+        </div>
+        <div class="col-md-6">
+            <input type="text" class="form-control" id="searchInput" placeholder="검색어를 입력하세요...">
+        </div>
+    </div>
+
+    <!-- 카드 목록 -->
+    <div class="row row-cols-1 row-cols-md-3 g-4">
+        {% for job in job_postings %}
+        <div class="col job-card" data-platform="{{ job.platform }}" data-job-id="{{ job.id }}">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h5 class="card-title mb-0">{{ job.company_name }}</h5>
+                        <span class="badge bg-primary">{{ job.platform }}</span>
+                    </div>
+                    <h6 class="card-subtitle mb-2 text-primary job-title-link" style="cursor: pointer;" data-bs-toggle="modal" data-bs-target="#jobModal{{ job.id }}">
+                        {{ job.job_title }}
+                    </h6>
+                    <p class="card-text text-truncate">{{ job.description[:100] }}...</p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">마감일: {{ job.deadline or '상시' }}</small>
+                        <div>
+                            <a href="{{ job.link }}" target="_blank" class="btn btn-outline-secondary btn-sm me-2">
+                                <i class="bi bi-box-arrow-up-right"></i> 원문
+                            </a>
+                            <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#jobModal{{ job.id }}">상세보기</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 상세 정보 모달 -->
+        <div class="modal fade" id="jobModal{{ job.id }}" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">{{ job.company_name }} - {{ job.job_title }}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <!-- 플랫폼별 상세 정보 -->
+                        {% if job.platform == 'wanted' %}
+                            <div class="job-section">
+                                <h6 class="section-title">📋 주요 업무</h6>
+                                <div class="section-content">{{ job.main_tasks | safe }}</div>
+                            </div>
+                            <div class="job-section">
+                                <h6 class="section-title">✅ 자격 요건</h6>
+                                <div class="section-content">{{ job.requirements | safe }}</div>
+                            </div>
+                            <div class="job-section">
+                                <h6 class="section-title">⭐ 우대 사항</h6>
+                                <div class="section-content">{{ job.preferences | safe }}</div>
+                            </div>
+                            <div class="job-section">
+                                <h6 class="section-title">🎁 혜택 및 복지</h6>
+                                <div class="section-content">{{ job.benefits | safe }}</div>
+                            </div>
+                        {% else %}
+                            <div class="job-section">
+                                <h6 class="section-title">📝 상세 설명</h6>
+                                <div class="section-content">{{ job.description | safe }}</div>
+                            </div>
+                        {% endif %}
+                        
+                        <!-- 메타 정보 -->
+                        <div class="job-meta mt-4">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <small class="text-muted">
+                                        <i class="bi bi-calendar"></i> 마감일: {{ job.deadline or '상시' }}
+                                    </small>
+                                </div>
+                                <div class="col-md-6 text-end">
+                                    <small class="text-muted">
+                                        <i class="bi bi-globe"></i> 플랫폼: {{ job.platform }}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <a href="{{ job.link }}" target="_blank" class="btn btn-primary">
+                            <i class="bi bi-box-arrow-up-right"></i> 원문 보기
+                        </a>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if total_pages > 1 %}
+    <nav aria-label="Page navigation" class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if current_page > 1 %}
+            <li class="page-item">
+                <a class="page-link" href="{{ platform_url }}?page={{ current_page - 1 }}">&laquo; 이전</a>
+            </li>
+            {% endif %}
+            
+            {% for p in range(1, total_pages + 1) %}
+            <li class="page-item {% if p == current_page %}active{% endif %}">
+                <a class="page-link" href="{{ platform_url }}?page={{ p }}">{{ p }}</a>
+            </li>
+            {% endfor %}
+            
+            {% if current_page < total_pages %}
+            <li class="page-item">
+                <a class="page-link" href="{{ platform_url }}?page={{ current_page + 1 }}">다음 &raquo;</a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+
+<!-- CSS 스타일 -->
+<style>
+.job-section {
+    margin-bottom: 2rem;
+    padding: 1rem;
+    background-color: #f8f9fa;
+    border-radius: 0.5rem;
+}
+
+.section-title {
+    color: #0d6efd;
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+
+.section-content {
+    white-space: pre-line;
+    color: #212529;
+}
+
+.job-meta {
+    border-top: 1px solid #dee2e6;
+    padding-top: 1rem;
+}
+
+.card {
+    transition: transform 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.badge {
+    font-size: 0.8rem;
+}
+
+.job-title-link {
+    color: #0d6efd !important;
+    text-decoration: none;
+    transition: color 0.2s;
+    cursor: pointer;
+}
+
+.job-title-link:hover {
+    color: #0a58ca !important;
+    text-decoration: underline;
+}
+
+.btn-group .btn {
+    margin-right: 0.25rem;
+}
+
+.btn-group .btn:last-child {
+    margin-right: 0;
+}
+</style>
+
+<!-- JavaScript -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const platformFilter = document.getElementById('platformFilter');
+    const searchInput = document.getElementById('searchInput');
+    const jobCards = document.querySelectorAll('.job-card');
+
+    function filterJobs() {
+        const platform = platformFilter.value;
+        const searchTerm = searchInput.value.toLowerCase();
+
+        jobCards.forEach(card => {
+            const cardPlatform = card.dataset.platform.toLowerCase();
+            const cardTitle = card.querySelector('.card-title').textContent.toLowerCase();
+            const cardSubtitle = card.querySelector('.job-title-link').textContent.toLowerCase();
+            
+            const platformMatch = platform === 'all' || cardPlatform === platform;
+            const searchMatch = !searchTerm || 
+                cardTitle.includes(searchTerm) || 
+                cardSubtitle.includes(searchTerm);
+
+            card.style.display = platformMatch && searchMatch ? 'block' : 'none';
+        });
+    }
+
+    platformFilter.addEventListener('change', filterJobs);
+    searchInput.addEventListener('input', filterJobs);
+});
+
+// URL 크롤링 함수
+async function crawlUrl() {
+    const urlInput = document.getElementById('urlInput');
+    const url = urlInput.value.trim();
+    
+    if (!url) {
+        alert('URL을 입력해주세요.');
+        return;
+    }
+    
+    try {
+        const formData = new FormData();
+        formData.append('url', url);
+        formData.append('platform', 'saramin');  // 기본값으로 saramin 설정
+        
+        const response = await fetch('/api/crawl', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            alert(result.message);
+            location.reload();  // 페이지 새로고침
+        } else {
+            alert('에러: ' + result.message);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('크롤링 중 오류가 발생했습니다.');
+    }
+}
+
+// 여러 URL 크롤링 함수
+async function crawlUrls() {
+    const urlsInput = document.getElementById('urlsInput');
+    const urls = urlsInput.value.trim();
+    
+    if (!urls) {
+        alert('URL을 입력해주세요.');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/crawl/bulk', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                urls: urls.split('\n').filter(url => url.trim()),
+                platform: 'saramin'  // 기본값으로 saramin 설정
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            alert(result.message);
+            location.reload();  // 페이지 새로고침
+        } else {
+            alert('에러: ' + result.message);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('크롤링 중 오류가 발생했습니다.');
+    }
+}
+</script>
+
+<!-- URL 입력 모달 -->
+<div class="modal fade" id="urlModal" tabindex="-1" aria-labelledby="urlModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="urlModalLabel">채용 공고 URL 입력</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="urlInput" class="form-label">URL</label>
+                    <input type="text" class="form-control" id="urlInput" placeholder="채용 공고 URL을 입력하세요">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                <button type="button" class="btn btn-primary" onclick="crawlUrl()">크롤링</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 여러 URL 입력 모달 -->
+<div class="modal fade" id="bulkUrlModal" tabindex="-1" aria-labelledby="bulkUrlModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="bulkUrlModalLabel">여러 채용 공고 URL 입력</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="urlsInput" class="form-label">URLs (한 줄에 하나씩)</label>
+                    <textarea class="form-control" id="urlsInput" rows="5" placeholder="채용 공고 URL을 한 줄에 하나씩 입력하세요"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                <button type="button" class="btn btn-primary" onclick="crawlUrls()">크롤링</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

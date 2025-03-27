@@ -1,0 +1,298 @@
+{% extends "base.html" %}
+
+{% block title %}포트폴리오{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- 상단 버튼 그룹 -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>포트폴리오 관리</h2>
+        <div class="btn-group">
+            <button type="button" class="btn btn-primary me-2" data-bs-toggle="modal" data-bs-target="#addPortfolioModal">
+                <i class="bi bi-plus-lg"></i> 포트폴리오 추가
+            </button>
+            <button type="button" class="btn btn-success me-2" onclick="exportPortfolio()">
+                <i class="bi bi-download"></i> 포트폴리오 내보내기
+            </button>
+            <div class="btn-group">
+                <a href="/api/backup/db" class="btn btn-info me-2">
+                    <i class="bi bi-database-down"></i> DB 백업
+                </a>
+                <button type="button" class="btn btn-warning" onclick="showRestoreModal()">
+                    <i class="bi bi-database-up"></i> DB 복원
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 포트폴리오 목록 -->
+    <div class="row g-4">
+        {% for portfolio in portfolios %}
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">{{ portfolio.title }}</h5>
+                    <p class="card-text">{{ portfolio.description }}</p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="btn-group">
+                            <button class="btn btn-sm btn-outline-primary" onclick="viewPortfolio({{ portfolio.id }})">
+                                <i class="bi bi-eye"></i> 보기
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deletePortfolio({{ portfolio.id }})">
+                                <i class="bi bi-trash"></i> 삭제
+                            </button>
+                        </div>
+                        <small class="text-muted">{{ portfolio.created_at.strftime('%Y-%m-%d') }}</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- 모달 컴포넌트들 -->
+{% include 'components/portfolio/add_modal.html' %}
+{% include 'components/portfolio/view_modal.html' %}
+{% include 'components/portfolio/export_modal.html' %}
+{% include 'components/portfolio/restore_modal.html' %}
+
+<style>
+.portfolio-list {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 10px;
+}
+
+.portfolio-list .form-check {
+    margin-bottom: 8px;
+}
+
+.portfolio-list .form-check:last-child {
+    margin-bottom: 0;
+}
+</style>
+
+<script>
+// 링크 관리
+let linkCounter = 0;
+
+function addLinkField() {
+    const linksList = document.getElementById('linksList');
+    const linkDiv = document.createElement('div');
+    linkDiv.className = 'link-item border rounded p-3 mb-3';
+    linkDiv.dataset.linkId = linkCounter++;
+    
+    linkDiv.innerHTML = `
+        <div class="mb-2">
+            <label class="form-label">링크 제목</label>
+            <input type="text" class="form-control" name="links[${linkCounter}][title]" placeholder="예: GitHub, 데모, 문서 등" required>
+        </div>
+        <div class="mb-2">
+            <label class="form-label">URL</label>
+            <input type="url" class="form-control" name="links[${linkCounter}][url]" required>
+        </div>
+        <div class="mb-2">
+            <label class="form-label">설명 (선택사항)</label>
+            <textarea class="form-control" name="links[${linkCounter}][description]" rows="2"></textarea>
+        </div>
+        <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeLinkField(this)">
+            <i class="bi bi-trash"></i> 삭제
+        </button>
+    `;
+    
+    linksList.appendChild(linkDiv);
+}
+
+function removeLinkField(button) {
+    button.closest('.link-item').remove();
+}
+
+// API 호출 함수들
+async function handlePortfolioSubmit(event) {
+    event.preventDefault();
+    
+    const formData = new FormData(event.target);
+    const data = {
+        title: formData.get('title'),
+        description: formData.get('description'),
+        links: []
+    };
+    
+    // 링크 데이터 수집
+    const linkItems = document.querySelectorAll('.link-item');
+    for (const item of linkItems) {
+        const linkId = item.dataset.linkId;
+        const title = item.querySelector(`input[name="links[${linkId}][title]"]`).value;
+        const url = item.querySelector(`input[name="links[${linkId}][url]"]`).value;
+        const description = item.querySelector(`textarea[name="links[${linkId}][description]"]`).value;
+        
+        if (title && url) {
+            data.links.push({ title, url, description: description || null });
+        }
+    }
+    
+    try {
+        const response = await fetch('/api/portfolio', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+
+        if (response.ok) {
+            location.reload();
+        } else {
+            const errorData = await response.json();
+            alert(errorData.detail || '포트폴리오 저장에 실패했습니다.');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('포트폴리오 저장 중 오류가 발생했습니다.');
+    }
+}
+
+async function viewPortfolio(id) {
+    try {
+        const response = await fetch(`/api/portfolio/${id}`);
+        if (!response.ok) throw new Error('포트폴리오를 불러올 수 없습니다.');
+        
+        const portfolio = await response.json();
+        
+        // 모달 내용 업데이트
+        document.getElementById('portfolioTitle').textContent = portfolio.title;
+        document.getElementById('portfolioDescription').textContent = portfolio.description;
+        document.getElementById('portfolioCreatedAt').textContent = new Date(portfolio.created_at).toLocaleDateString();
+        
+        // 링크 목록 업데이트
+        const linksContainer = document.getElementById('linksContainer');
+        linksContainer.innerHTML = portfolio.links && portfolio.links.length > 0 
+            ? portfolio.links.map(link => `
+                <div class="mb-2">
+                    <div class="d-flex align-items-center">
+                        <a href="${link.url}" target="_blank" class="text-decoration-none me-2">
+                            <i class="bi bi-link-45deg"></i> ${link.title}
+                        </a>
+                        ${link.description ? `<small class="text-muted">- ${link.description}</small>` : ''}
+                    </div>
+                </div>
+            `).join('')
+            : '<p class="text-muted">등록된 링크가 없습니다.</p>';
+        
+        new bootstrap.Modal(document.getElementById('viewPortfolioModal')).show();
+    } catch (error) {
+        console.error('Error:', error);
+        alert('포트폴리오를 불러오는 중 오류가 발생했습니다.');
+    }
+}
+
+async function deletePortfolio(id) {
+    if (!confirm('정말 이 포트폴리오를 삭제하시겠습니까?')) return;
+    
+    try {
+        const response = await fetch(`/api/portfolio/${id}`, { method: 'DELETE' });
+        if (response.ok) {
+            location.reload();
+        } else {
+            alert('포트폴리오 삭제에 실패했습니다.');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('포트폴리오 삭제 중 오류가 발생했습니다.');
+    }
+}
+
+// 모달 관련 함수들
+function exportPortfolio() {
+    new bootstrap.Modal(document.getElementById('exportModal')).show();
+}
+
+function showRestoreModal() {
+    new bootstrap.Modal(document.getElementById('restoreModal')).show();
+}
+
+async function handleExport(event) {
+    event.preventDefault();
+    
+    const jobId = document.getElementById('jobSelect').value;
+    const selectedPortfolios = Array.from(document.querySelectorAll('input[name="portfolios"]:checked'))
+        .map(cb => parseInt(cb.value));
+    
+    if (!jobId) {
+        alert('채용공고를 선택해주세요.');
+        return;
+    }
+    
+    if (selectedPortfolios.length === 0) {
+        alert('하나 이상의 포트폴리오를 선택해주세요.');
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/portfolio/export', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ job_id: parseInt(jobId), portfolio_ids: selectedPortfolios })
+        });
+
+        if (response.ok) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `portfolio_export_${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            
+            bootstrap.Modal.getInstance(document.getElementById('exportModal')).hide();
+        } else {
+            const errorData = await response.json();
+            alert(errorData.detail || '내보내기에 실패했습니다.');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('내보내기 중 오류가 발생했습니다.');
+    }
+}
+
+async function handleRestore(event) {
+    event.preventDefault();
+    
+    const fileInput = document.getElementById('backupFile');
+    const file = fileInput.files[0];
+    
+    if (!file) {
+        alert('백업 파일을 선택해주세요.');
+        return;
+    }
+    
+    if (!confirm('정말 데이터베이스를 복원하시겠습니까? 기존 데이터는 모두 삭제됩니다.')) {
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    try {
+        const response = await fetch('/api/restore/db', {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (response.ok) {
+            alert('데이터베이스가 성공적으로 복원되었습니다.');
+            location.reload();
+        } else {
+            const errorData = await response.json();
+            alert(errorData.detail || '데이터베이스 복원에 실패했습니다.');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('데이터베이스 복원 중 오류가 발생했습니다.');
+    }
+}
+</script>
+{% endblock %} 

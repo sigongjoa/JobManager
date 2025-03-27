@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>취업 관리 시스템</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="#">취업 관리 시스템</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-page="dashboard">대시보드</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-page="jobs">채용 공고</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-page="resumes">자소서</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-page="applications">지원 결과</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-page="feedbacks">피드백</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- 대시보드 페이지 -->
+        <div id="dashboard-page" class="page">
+            <h2>대시보드</h2>
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>최근 채용 공고</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="recent-jobs-list">
+                                <p>로딩 중...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>지원 현황</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="application-stats">
+                                <p>로딩 중...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row mt-4">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>최근 피드백</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="recent-feedbacks">
+                                <p>로딩 중...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 채용 공고 페이지 -->
+        <div id="jobs-page" class="page d-none">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2>채용 공고</h2>
+                <div>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addJobModal">
+                        채용 공고 추가
+                    </button>
+                    <button class="btn btn-success" id="crawl-jobs-btn">
+                        채용 공고 크롤링
+                    </button>
+                </div>
+            </div>
+            <div class="mt-4">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>제목</th>
+                                <th>회사</th>
+                                <th>마감일</th>
+                                <th>크롤링 날짜</th>
+                                <th>액션</th>
+                            </tr>
+                        </thead>
+                        <tbody id="jobs-list">
+                            <tr>
+                                <td colspan="5" class="text-center">로딩 중...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 자소서 페이지 -->
+        <div id="resumes-page" class="page d-none">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2>자소서</h2>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addResumeModal">
+                    자소서 추가
+                </button>
+            </div>
+            <div class="mt-4">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>제목</th>
+                                <th>업로드 날짜</th>
+                                <th>액션</th>
+                            </tr>
+                        </thead>
+                        <tbody id="resumes-list">
+                            <tr>
+                                <td colspan="3" class="text-center">로딩 중...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 지원 결과 페이지 -->
+        <div id="applications-page" class="page d-none">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2>지원 결과</h2>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addApplicationModal">
+                    지원 결과 추가
+                </button>
+            </div>
+            <div class="mt-4">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>회사</th>
+                                <th>채용 공고</th>
+                                <th>자소서</th>
+                                <th>상태</th>
+                                <th>지원 날짜</th>
+                                <th>액션</th>
+                            </tr>
+                        </thead>
+                        <tbody id="applications-list">
+                            <tr>
+                                <td colspan="6" class="text-center">로딩 중...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 피드백 페이지 -->
+        <div id="feedbacks-page" class="page d-none">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2>피드백</h2>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#requestFeedbackModal">
+                    피드백 요청
+                </button>
+            </div>
+            <div class="mt-4">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>자소서</th>
+                                <th>채용 공고</th>
+                                <th>생성 날짜</th>
+                                <th>액션</th>
+                            </tr>
+                        </thead>
+                        <tbody id="feedbacks-list">
+                            <tr>
+                                <td colspan="4" class="text-center">로딩 중...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 채용 공고 상세 모달 -->
+    <div class="modal fade" id="jobDetailModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">채용 공고 상세</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="job-detail-content">
+                        <p>로딩 중...</p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 자소서 상세 모달 -->
+    <div class="modal fade" id="resumeDetailModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">자소서 상세</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="resume-detail-content">
+                        <p>로딩 중...</p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 피드백 상세 모달 -->
+    <div class="modal fade" id="feedbackDetailModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">피드백 상세</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="feedback-detail-content">
+                        <p>로딩 중...</p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 채용 공고 추가 모달 -->
+    <div class="modal fade" id="addJobModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">채용 공고 추가</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="add-job-form">
+                        <div class="mb-3">
+                            <label for="job-title" class="form-label">제목</label>
+                            <input type="text" class="form-control" id="job-title" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="job-company" class="form-label">회사</label>
+                            <input type="text" class="form-control" id="job-company" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="job-link" class="form-label">링크</label>
+                            <input type="url" class="form-control" id="job-link" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="job-deadline" class="form-label">마감일</label>
+                            <input type="text" class="form-control" id="job-deadline">
+                        </div>
+                        <div class="mb-3">
+                            <label for="job-description" class="form-label">설명</label>
+                            <textarea class="form-control" id="job-description" rows="5" required></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                    <button type="button" class="btn btn-primary" id="add-job-btn">추가</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 자소서 추가 모달 -->
+    <div class="modal fade" id="addResumeModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">자소서 추가</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="add-resume-form">
+                        <div class="mb-3">
+                            <label for="resume-title" class="form-label">제목</label>
+                            <input type="text" class="form-control" id="resume-title" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="resume-file" class="form-label">PDF 파일</label>
+                            <input type="file" class="form-control" id="resume-file" accept=".pdf" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                    <button type="button" class="btn btn-primary" id="add-resume-btn">추가</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 지원 결과 추가 모달 -->
+    <div class="modal fade" id="addApplicationModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">지원 결과 추가</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="add-application-form">
+                        <div class="mb-3">
+                            <label for="application-job" class="form-label">채용 공고</label>
+                            <select class="form-select" id="application-job" required>
+                                <option value="">선택하세요</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="application-resume" class="form-label">자소서</label>
+                            <select class="form-select" id="application-resume" required>
+                                <option value="">선택하세요</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="application-status" class="form-label">상태</label>
+                            <select class="form-select" id="application-status" required>
+                                <option value="지원 완료">지원 완료</option>
+                                <option value="서류 합격">서류 합격</option>
+                                <option value="면접 합격">면접 합격</option>
+                                <option value="최종 합격">최종 합격</option>
+                                <option value="불합격">불합격</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="application-notes" class="form-label">메모</label>
+                            <textarea class="form-control" id="application-notes" rows="3"></textarea>
+                    <response clipped><NOTE>To save on context only part of this file has been shown to you. You should retry this tool after you have searched inside the file with `grep -n` in order to find the line numbers of what you are looking for.</NOTE>

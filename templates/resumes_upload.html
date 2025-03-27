@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}자소서 업로드{% endblock %}
+
+{% block content %}
+<div class="container">
+  <h2 class="mb-4">자소서 업로드</h2>
+  
+  <form method="post" action="/resumes/upload" enctype="multipart/form-data" class="needs-validation" novalidate>
+    <div class="mb-3">
+      <label for="job_posting_id" class="form-label">연관된 채용공고</label>
+      <select class="form-select" id="job_posting_id" name="job_posting_id">
+        <option value="">선택하지 않음</option>
+        {% for job in job_postings %}
+        <option value="{{ job.id }}" 
+                data-company="{{ job.company_name }}"
+                data-link="{{ job.link }}">
+          {{ job.company_name }} - {{ job.job_title }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="mb-3">
+      <label for="title" class="form-label">자소서 제목</label>
+      <input type="text" class="form-control" id="title" name="title" required>
+      <div class="invalid-feedback">
+        자소서 제목을 입력해주세요.
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <label for="company_name" class="form-label">회사명</label>
+      <input type="text" class="form-control" id="company_name" name="company_name" required>
+      <div class="invalid-feedback">
+        회사명을 입력해주세요.
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <label for="link" class="form-label">채용공고 링크 (선택)</label>
+      <input type="url" class="form-control" id="link" name="link">
+    </div>
+
+    <div class="mb-3">
+      <label for="status" class="form-label">상태</label>
+      <select class="form-select" id="status" name="status" required>
+        <option value="검토중">검토중</option>
+        <option value="열람중">열람중</option>
+        <option value="합격">합격</option>
+        <option value="불합격">불합격</option>
+      </select>
+      <div class="invalid-feedback">
+        상태를 선택해주세요.
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <label for="file" class="form-label">자소서 파일</label>
+      <input type="file" class="form-control" id="file" name="file" required>
+      <div class="invalid-feedback">
+        파일을 선택해주세요.
+      </div>
+      <div class="form-text">
+        지원 형식: PDF, DOC, DOCX, TXT
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary">업로드</button>
+    <a href="/resumes/manage" class="btn btn-secondary">취소</a>
+  </form>
+</div>
+
+<script>
+// 폼 유효성 검사
+(function () {
+    'use strict'
+    var forms = document.querySelectorAll('.needs-validation')
+    Array.prototype.slice.call(forms).forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+            if (!form.checkValidity()) {
+                event.preventDefault()
+                event.stopPropagation()
+            }
+            form.classList.add('was-validated')
+        }, false)
+    })
+})()
+
+// 채용공고 선택 시 자동 입력
+document.getElementById('job_posting_id').addEventListener('change', function() {
+    const selectedOption = this.options[this.selectedIndex];
+    const companyInput = document.getElementById('company_name');
+    const linkInput = document.getElementById('link');
+    
+    if (this.value) {
+        companyInput.value = selectedOption.dataset.company;
+        linkInput.value = selectedOption.dataset.link;
+        
+        // 자소서 제목 자동 생성 (회사명이 비어있지 않은 경우에만)
+        if (!document.getElementById('title').value && selectedOption.dataset.company) {
+            document.getElementById('title').value = 
+                selectedOption.dataset.company + ' 입사지원서';
+        }
+    }
+});
+</script>
+{% endblock %}

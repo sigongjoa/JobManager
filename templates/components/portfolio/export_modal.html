@@ -1,0 +1,43 @@
+<!-- Export 모달 -->
+<div class="modal fade" id="exportModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">포트폴리오 내보내기</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="exportForm" onsubmit="handleExport(event)">
+                    <div class="mb-3">
+                        <label class="form-label">채용공고 선택</label>
+                        <select class="form-select" id="jobSelect" required>
+                            <option value="">채용공고를 선택하세요</option>
+                            {% for job in jobs %}
+                            <option value="{{ job.id }}">{{ job.company_name }} - {{ job.job_title }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">포트폴리오 선택</label>
+                        <div class="portfolio-list">
+                            {% for portfolio in portfolios %}
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" 
+                                       name="portfolios" value="{{ portfolio.id }}" 
+                                       id="portfolio{{ portfolio.id }}">
+                                <label class="form-check-label" for="portfolio{{ portfolio.id }}">
+                                    {{ portfolio.title }}
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="text-end">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                        <button type="submit" class="btn btn-primary">내보내기</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div> 
