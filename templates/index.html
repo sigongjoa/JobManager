@@ -3,45 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Job Manager</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+    <title>취업 관리 시스템</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css" rel="stylesheet">
     <style>
-        .job-card {
-            margin-bottom: 20px;
-            transition: transform 0.2s;
-        }
-        .job-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        }
-        .search-section {
-            background-color: #f8f9fa;
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 30px;
-        }
-        .loading {
-            display: none;
-            text-align: center;
-            padding: 20px;
-        }
         .sidebar {
             min-height: 100vh;
-            background-color: #343a40;
-            padding-top: 20px;
-        }
-        .sidebar .nav-link {
-            color: #fff;
-            padding: 10px 20px;
-            margin: 5px 0;
-            border-radius: 5px;
-        }
-        .sidebar .nav-link:hover {
-            background-color: #495057;
-        }
-        .sidebar .nav-link.active {
-            background-color: #0d6efd;
+            background-color: #f8f9fa;
+            padding: 20px;
         }
         .main-content {
             padding: 20px;
@@ -54,23 +25,45 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         .stats-card h3 {
-            color: #6c757d;
-            font-size: 1.1rem;
+            font-size: 1.2rem;
             margin-bottom: 10px;
+            color: #6c757d;
         }
         .stats-card .number {
             font-size: 2rem;
             font-weight: bold;
             color: #0d6efd;
         }
-        .portfolio-card {
-            margin-bottom: 20px;
-        }
-        .resume-form {
+        .job-card, .resume-card, .application-card {
             background-color: #fff;
-            padding: 20px;
             border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        .section {
+            display: none;
+        }
+        .section.active {
+            display: block;
+        }
+        .nav-link {
+            color: #495057;
+            padding: 10px 15px;
+            border-radius: 5px;
+            margin-bottom: 5px;
+        }
+        .nav-link:hover {
+            background-color: #e9ecef;
+        }
+        .nav-link.active {
+            background-color: #0d6efd;
+            color: #fff;
         }
     </style>
 </head>
@@ -79,22 +72,19 @@
         <div class="row">
             <!-- 사이드바 -->
             <div class="col-md-2 sidebar">
-                <h4 class="text-white text-center mb-4">Job Manager</h4>
+                <h3 class="mb-4">취업 관리 시스템</h3>
                 <nav class="nav flex-column">
-                    <a class="nav-link active" href="#" onclick="showSection('dashboard')">
+                    <a class="nav-link active" href="#" data-page="dashboard">
                         <i class="bi bi-speedometer2"></i> 대시보드
                     </a>
-                    <a class="nav-link" href="#" onclick="showSection('jobs')">
+                    <a class="nav-link" href="#" data-page="jobs">
                         <i class="bi bi-briefcase"></i> 채용 공고
                     </a>
-                    <a class="nav-link" href="#" onclick="showSection('resumes')">
-                        <i class="bi bi-file-earmark-text"></i> 이력서
+                    <a class="nav-link" href="#" data-page="resumes">
+                        <i class="bi bi-file-person"></i> 이력서
                     </a>
-                    <a class="nav-link" href="#" onclick="showSection('applications')">
+                    <a class="nav-link" href="#" data-page="applications">
                         <i class="bi bi-send"></i> 지원 현황
-                    </a>
-                    <a class="nav-link" href="#" onclick="showSection('portfolio')">
-                        <i class="bi bi-collection"></i> 포트폴리오
                     </a>
                 </nav>
             </div>
@@ -102,7 +92,7 @@
             <!-- 메인 콘텐츠 -->
             <div class="col-md-10 main-content">
                 <!-- 대시보드 섹션 -->
-                <div id="dashboard" class="section">
+                <div id="dashboard" class="section active">
                     <h2 class="mb-4">대시보드</h2>
                     <div class="row">
                         <div class="col-md-3">
@@ -125,195 +115,446 @@
                         </div>
                         <div class="col-md-3">
                             <div class="stats-card">
-                                <h3>오늘의 크롤링</h3>
-                                <div class="number" id="todayCrawls">0</div>
+                                <h3>오늘의 지원</h3>
+                                <div class="number" id="todayApplications">0</div>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- 채용 공고 섹션 -->
-                <div id="jobs" class="section" style="display: none;">
+                <div id="jobs" class="section">
                     <h2 class="mb-4">채용 공고</h2>
-                    <!-- 크롤링 섹션 -->
-                    <div class="search-section">
-                        <h3>채용 공고 URL 입력</h3>
-                        <div class="row">
-                            <div class="col-md-8">
-                                <div class="input-group mb-3">
-                                    <input type="text" id="jobUrl" class="form-control" placeholder="사람인 채용 공고 URL을 입력하세요">
-                                    <button class="btn btn-primary" onclick="crawlJob()">크롤링</button>
-                                </div>
-                            </div>
+                    <div class="crawl-form mb-4">
+                        <div class="input-group">
+                            <input type="text" id="saramin-url" class="form-control" placeholder="사람인 채용공고 URL을 입력하세요">
+                            <button class="btn btn-primary" onclick="crawlJob()">크롤링</button>
                         </div>
                     </div>
 
-                    <!-- 로딩 표시 -->
-                    <div id="loading" class="loading">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                        <p class="mt-2">채용 공고를 크롤링하는 중입니다...</p>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>번호</th>
+                                    <th>회사명</th>
+                                    <th>제목</th>
+                                    <th>지원마감일</th>
+                                    <th>관리</th>
+                                </tr>
+                            </thead>
+                            <tbody id="jobs-table-body">
+                                <!-- 여기에 동적으로 데이터가 추가됩니다 -->
+                            </tbody>
+                        </table>
                     </div>
 
-                    <!-- 크롤링 결과 -->
-                    <div id="results" class="row mb-4">
-                        <!-- 크롤링된 채용 공고가 여기에 표시됩니다 -->
-                    </div>
-
-                    <!-- 저장된 채용 공고 목록 -->
-                    <h3 class="mb-3">저장된 채용 공고</h3>
-                    <div id="jobsList" class="row">
-                        <!-- 저장된 채용 공고 목록이 여기에 표시됩니다 -->
-                    </div>
+                    <!-- 페이지네이션 -->
+                    <nav aria-label="Page navigation" class="mt-4">
+                        <ul class="pagination justify-content-center" id="pagination">
+                            <!-- 페이지네이션 버튼들이 동적으로 추가됩니다 -->
+                        </ul>
+                    </nav>
                 </div>
 
                 <!-- 이력서 섹션 -->
-                <div id="resumes" class="section" style="display: none;">
+                <div id="resumes" class="section">
                     <h2 class="mb-4">이력서</h2>
-                    <!-- 이력서 작성 폼 -->
-                    <div class="resume-form mb-4">
-                        <h3 class="mb-3">이력서 작성</h3>
-                        <form id="resumeForm" onsubmit="submitResume(event)">
-                            <div class="mb-3">
-                                <label for="name" class="form-label">이름</label>
-                                <input type="text" class="form-control" id="name" required>
-                            </div>
-                            <div class="mb-3">
-                                <label for="email" class="form-label">이메일</label>
-                                <input type="email" class="form-control" id="email" required>
-                            </div>
-                            <div class="mb-3">
-                                <label for="phone" class="form-label">연락처</label>
-                                <input type="tel" class="form-control" id="phone" required>
-                            </div>
-                            <div class="mb-3">
-                                <label for="education" class="form-label">학력</label>
-                                <textarea class="form-control" id="education" rows="3" required></textarea>
-                            </div>
-                            <div class="mb-3">
-                                <label for="experience" class="form-label">경력</label>
-                                <textarea class="form-control" id="experience" rows="3" required></textarea>
-                            </div>
-                            <div class="mb-3">
-                                <label for="skills" class="form-label">기술 스택</label>
-                                <input type="text" class="form-control" id="skills" placeholder="쉼표로 구분하여 입력">
-                            </div>
-                            <button type="submit" class="btn btn-primary">저장</button>
-                        </form>
+                    <div class="row mb-4">
+                        <div class="col-md-12">
+                            <button class="btn btn-primary" onclick="showResumeForm()">
+                                <i class="bi bi-plus"></i> 새 이력서 작성
+                            </button>
+                        </div>
                     </div>
-
-                    <!-- 저장된 이력서 목록 -->
-                    <h3 class="mb-3">저장된 이력서</h3>
                     <div id="resumesList" class="row">
-                        <!-- 이력서 목록이 여기에 표시됩니다 -->
+                        <!-- 여기에 이력서 카드들이 동적으로 추가됩니다 -->
                     </div>
                 </div>
 
                 <!-- 지원 현황 섹션 -->
-                <div id="applications" class="section" style="display: none;">
+                <div id="applications" class="section">
                     <h2 class="mb-4">지원 현황</h2>
-                    <div class="row" id="applicationsList">
-                        <!-- 지원 현황 목록이 여기에 표시됩니다 -->
-                    </div>
-                </div>
-
-                <!-- 포트폴리오 섹션 -->
-                <div id="portfolio" class="section" style="display: none;">
-                    <h2 class="mb-4">포트폴리오</h2>
-                    <div class="row">
-                        <div class="col-md-4">
-                            <div class="card portfolio-card">
-                                <div class="card-body">
-                                    <h5 class="card-title">프로젝트 추가</h5>
-                                    <form id="portfolioForm" onsubmit="addPortfolio(event)">
-                                        <div class="mb-3">
-                                            <label for="projectTitle" class="form-label">프로젝트명</label>
-                                            <input type="text" class="form-control" id="projectTitle" required>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label for="projectDesc" class="form-label">설명</label>
-                                            <textarea class="form-control" id="projectDesc" rows="3" required></textarea>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label for="projectLink" class="form-label">링크</label>
-                                            <input type="url" class="form-control" id="projectLink">
-                                        </div>
-                                        <button type="submit" class="btn btn-primary">추가</button>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-8">
-                            <div id="portfolioList" class="row">
-                                <!-- 포트폴리오 목록이 여기에 표시됩니다 -->
-                            </div>
-                        </div>
+                    <div id="applicationsList" class="row">
+                        <!-- 여기에 지원 현황 카드들이 동적으로 추가됩니다 -->
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- 이력서 작성 모달 -->
+    <div class="modal fade" id="resumeModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">이력서 작성</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="resumeForm">
+                        <div class="mb-3">
+                            <label class="form-label">이름</label>
+                            <input type="text" class="form-control" name="name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">이메일</label>
+                            <input type="email" class="form-control" name="email" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">연락처</label>
+                            <input type="tel" class="form-control" name="phone" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">학력</label>
+                            <textarea class="form-control" name="education" rows="3" required></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">경력</label>
+                            <textarea class="form-control" name="experience" rows="3" required></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">기술 스택</label>
+                            <textarea class="form-control" name="skills" rows="3" required></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                    <button type="button" class="btn btn-primary" onclick="submitResume()">저장</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 채용 공고 상세 정보 모달 추가 -->
+    <div class="modal fade" id="jobDetailModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">채용 공고 상세 정보</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="job-detail-content">
+                        <div class="company-info mb-4">
+                            <h3 id="modal-job-title" class="mb-2"></h3>
+                            <h4 id="modal-company-name" class="text-primary mb-3"></h4>
+                        </div>
+                        <div class="job-info">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <h5>기본 정보</h5>
+                                    <table class="table table-sm">
+                                        <tr>
+                                            <th width="100">경력</th>
+                                            <td id="modal-experience"></td>
+                                        </tr>
+                                        <tr>
+                                            <th>학력</th>
+                                            <td id="modal-education"></td>
+                                        </tr>
+                                        <tr>
+                                            <th>근무지역</th>
+                                            <td id="modal-location"></td>
+                                        </tr>
+                                        <tr>
+                                            <th>마감일</th>
+                                            <td id="modal-deadline"></td>
+                                        </tr>
+                                    </table>
+                                </div>
+                                <div class="col-md-6">
+                                    <h5>상세 정보</h5>
+                                    <table class="table table-sm">
+                                        <tr>
+                                            <th width="100">고용형태</th>
+                                            <td id="modal-employment-type"></td>
+                                        </tr>
+                                        <tr>
+                                            <th>급여</th>
+                                            <td id="modal-salary"></td>
+                                        </tr>
+                                        <tr>
+                                            <th>복리후생</th>
+                                            <td id="modal-benefits"></td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="job-description mb-3">
+                                <h5>주요 업무</h5>
+                                <div id="modal-main-tasks" class="border rounded p-3 bg-light"></div>
+                            </div>
+                            <div class="requirements mb-3">
+                                <h5>자격 요건</h5>
+                                <div id="modal-requirements" class="border rounded p-3 bg-light"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <a id="modal-original-link" href="#" target="_blank" class="btn btn-outline-primary">원문 보기</a>
+                    <button type="button" class="btn btn-success" onclick="applyToJob()">지원하기</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // 섹션 표시 함수
-        function showSection(sectionId) {
-            // 모든 섹션 숨기기
-            document.querySelectorAll('.section').forEach(section => {
-                section.style.display = 'none';
-            });
-            
-            // 선택된 섹션 표시
-            document.getElementById(sectionId).style.display = 'block';
-            
-            // 사이드바 메뉴 활성화 상태 업데이트
+        // 전역 변수
+        let currentPage = 1;
+        const itemsPerPage = 10;
+        let totalJobs = 0;
+        const resumeModal = new bootstrap.Modal(document.getElementById('resumeModal'));
+        const jobDetailModal = new bootstrap.Modal(document.getElementById('jobDetailModal'));
+        let currentJobId = null;
+
+        // 페이지 로드 시 실행
+        document.addEventListener('DOMContentLoaded', function() {
+            setupNavigation();
+            loadDashboard();
+            loadJobs(currentPage);
+        });
+
+        // 네비게이션 설정
+        function setupNavigation() {
             document.querySelectorAll('.nav-link').forEach(link => {
-                link.classList.remove('active');
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const page = this.dataset.page;
+                    changePage(page);
+                });
             });
-            event.target.classList.add('active');
         }
 
-        // 대시보드 통계 업데이트
-        async function updateDashboard() {
-            try {
-                const [jobsResponse, resumesResponse, applicationsResponse] = await Promise.all([
-                    fetch('/api/jobs'),
-                    fetch('/api/resumes'),
-                    fetch('/api/applications')
-                ]);
+        // 페이지 변경
+        function changePage(page) {
+            // 현재 페이지 숨기기
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.remove('active');
+            });
 
-                const jobsData = await jobsResponse.json();
-                const resumesData = await resumesResponse.json();
-                const applicationsData = await applicationsResponse.json();
+            // 새 페이지 표시
+            document.getElementById(page).classList.add('active');
 
-                document.getElementById('totalJobs').textContent = jobsData.jobs.length;
-                document.getElementById('totalResumes').textContent = resumesData.resumes.length;
-                document.getElementById('totalApplications').textContent = applicationsData.applications.length;
-                
-                // 오늘의 크롤링 수는 서버에서 제공하는 경우에만 업데이트
-                if (applicationsData.todayCrawls !== undefined) {
-                    document.getElementById('todayCrawls').textContent = applicationsData.todayCrawls;
+            // 네비게이션 링크 상태 업데이트
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+                if (link.dataset.page === page) {
+                    link.classList.add('active');
                 }
+            });
+
+            // 현재 페이지 업데이트
+            currentPage = page;
+
+            // 페이지별 데이터 로드
+            switch (page) {
+                case 'dashboard':
+                    loadDashboard();
+                    break;
+                case 'jobs':
+                    loadJobs();
+                    break;
+                case 'resumes':
+                    loadResumes();
+                    break;
+                case 'applications':
+                    loadApplications();
+                    break;
+            }
+        }
+
+        // 대시보드 데이터 로드
+        async function loadDashboard() {
+            try {
+                const response = await fetch('/api/dashboard');
+                const data = await response.json();
+                
+                document.getElementById('totalJobs').textContent = data.total_jobs;
+                document.getElementById('totalResumes').textContent = data.total_resumes;
+                document.getElementById('totalApplications').textContent = data.total_applications;
+                document.getElementById('todayApplications').textContent = data.today_applications;
             } catch (error) {
-                console.error('대시보드 업데이트 중 오류:', error);
+                console.error('대시보드 데이터 로드 중 오류:', error);
             }
         }
 
         // 채용 공고 목록 로드
-        async function loadJobs() {
+        async function loadJobs(page = 1) {
             try {
-                const response = await fetch('/api/jobs');
+                const response = await fetch(`/api/jobs?skip=${(page-1) * itemsPerPage}&limit=${itemsPerPage}`);
                 const data = await response.json();
                 
-                const jobsList = document.getElementById('jobsList');
-                jobsList.innerHTML = '';
-                
-                data.jobs.forEach(job => {
-                    const card = createJobCard(job);
-                    jobsList.appendChild(card);
-                });
+                if (data.success) {
+                    const tableBody = document.getElementById('jobs-table-body');
+                    tableBody.innerHTML = '';
+                    
+                    data.jobs.forEach((job, index) => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${(page-1) * itemsPerPage + index + 1}</td>
+                            <td>${job.company_name || '-'}</td>
+                            <td>
+                                <a href="#" onclick="showJobDetail('${job.id}', ${JSON.stringify(job).replace(/"/g, '&quot;')})">${job.title || '-'}</a>
+                            </td>
+                            <td>${job.deadline || '-'}</td>
+                            <td>
+                                <button class="btn btn-sm btn-success" onclick="applyJob('${job.id}')">지원하기</button>
+                            </td>
+                        `;
+                        tableBody.appendChild(row);
+                    });
+
+                    totalJobs = data.total || data.jobs.length;
+                    updatePagination(page);
+                }
             } catch (error) {
                 console.error('채용 공고 로드 중 오류:', error);
+            }
+        }
+
+        // 페이지네이션 업데이트
+        function updatePagination(currentPage) {
+            const totalPages = Math.ceil(totalJobs / itemsPerPage);
+            const pagination = document.getElementById('pagination');
+            pagination.innerHTML = '';
+
+            // 이전 페이지 버튼
+            const prevButton = document.createElement('li');
+            prevButton.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
+            prevButton.innerHTML = `
+                <a class="page-link" href="#" onclick="loadJobs(${currentPage - 1})" aria-label="Previous">
+                    <span aria-hidden="true">&laquo;</span>
+                </a>
+            `;
+            pagination.appendChild(prevButton);
+
+            // 페이지 번호 버튼들
+            for (let i = 1; i <= totalPages; i++) {
+                const pageButton = document.createElement('li');
+                pageButton.className = `page-item ${currentPage === i ? 'active' : ''}`;
+                pageButton.innerHTML = `
+                    <a class="page-link" href="#" onclick="loadJobs(${i})">${i}</a>
+                `;
+                pagination.appendChild(pageButton);
+            }
+
+            // 다음 페이지 버튼
+            const nextButton = document.createElement('li');
+            nextButton.className = `page-item ${currentPage === totalPages ? 'disabled' : ''}`;
+            nextButton.innerHTML = `
+                <a class="page-link" href="#" onclick="loadJobs(${currentPage + 1})" aria-label="Next">
+                    <span aria-hidden="true">&raquo;</span>
+                </a>
+            `;
+            pagination.appendChild(nextButton);
+        }
+
+        // 채용 공고 크롤링
+        async function crawlJob() {
+            const urlInput = document.getElementById('saramin-url');
+            const url = urlInput.value.trim();
+
+            if (!url) {
+                alert('URL을 입력해주세요.');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/crawl', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ url: url })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    alert('채용 공고가 성공적으로 크롤링되었습니다.');
+                    urlInput.value = ''; // 입력창 초기화
+                    loadJobs(currentPage); // 테이블 갱신
+                } else {
+                    alert(data.message || '크롤링 중 오류가 발생했습니다.');
+                }
+            } catch (error) {
+                console.error('크롤링 중 오류:', error);
+                alert('크롤링 중 오류가 발생했습니다.');
+            }
+        }
+
+        // 채용 공고 상세 정보 표시
+        function showJobDetail(jobId, jobData) {
+            currentJobId = jobId;
+            
+            // 모달 내용 업데이트
+            document.getElementById('modal-job-title').textContent = jobData.title || '-';
+            document.getElementById('modal-company-name').textContent = jobData.company_name || '-';
+            document.getElementById('modal-experience').textContent = jobData.experience || '-';
+            document.getElementById('modal-education').textContent = jobData.education || '-';
+            document.getElementById('modal-location').textContent = jobData.location || '-';
+            document.getElementById('modal-deadline').textContent = jobData.deadline || '-';
+            document.getElementById('modal-employment-type').textContent = jobData.employment_type || '-';
+            document.getElementById('modal-salary').textContent = jobData.salary || '-';
+            document.getElementById('modal-benefits').textContent = jobData.benefits || '-';
+            document.getElementById('modal-main-tasks').innerHTML = jobData.main_tasks ? jobData.main_tasks.replace(/\n/g, '<br>') : '-';
+            document.getElementById('modal-requirements').innerHTML = jobData.requirements ? jobData.requirements.replace(/\n/g, '<br>') : '-';
+            
+            // 원문 링크 설정
+            const originalLink = document.getElementById('modal-original-link');
+            originalLink.href = jobData.url || '#';
+            
+            // 모달 표시
+            jobDetailModal.show();
+        }
+
+        // 지원하기 함수
+        function applyToJob() {
+            if (currentJobId) {
+                applyJob(currentJobId);
+                jobDetailModal.hide();
+            }
+        }
+
+        // 이력서 모달 표시
+        function showResumeForm() {
+            document.getElementById('resumeForm').reset();
+            resumeModal.show();
+        }
+
+        // 이력서 저장
+        async function submitResume() {
+            const form = document.getElementById('resumeForm');
+            const formData = new FormData(form);
+            const resumeData = Object.fromEntries(formData.entries());
+
+            try {
+                const response = await fetch('/api/resumes', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(resumeData)
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('이력서가 성공적으로 저장되었습니다.');
+                    resumeModal.hide();
+                    loadResumes();
+                } else {
+                    alert('이력서 저장에 실패했습니다.');
+                }
+            } catch (error) {
+                console.error('이력서 저장 중 오류:', error);
+                alert('이력서 저장 중 오류가 발생했습니다.');
             }
         }
 
@@ -335,6 +576,32 @@
             }
         }
 
+        // 이력서 카드 생성
+        function createResumeCard(resume) {
+            const card = document.createElement('div');
+            card.className = 'col-md-6 mb-4';
+            card.innerHTML = `
+                <div class="resume-card">
+                    <h3>${resume.name}</h3>
+                    <p><i class="bi bi-envelope"></i> ${resume.email}</p>
+                    <p><i class="bi bi-telephone"></i> ${resume.phone}</p>
+                    <div class="details">
+                        <h4>학력</h4>
+                        <p>${resume.education}</p>
+                        <h4>경력</h4>
+                        <p>${resume.experience}</p>
+                        <h4>기술 스택</h4>
+                        <p>${resume.skills}</p>
+                    </div>
+                    <div class="mt-3">
+                        <button class="btn btn-primary" onclick="editResume('${resume.id}')">수정</button>
+                        <button class="btn btn-danger" onclick="deleteResume('${resume.id}')">삭제</button>
+                    </div>
+                </div>
+            `;
+            return card;
+        }
+
         // 지원 현황 목록 로드
         async function loadApplications() {
             try {
@@ -353,309 +620,53 @@
             }
         }
 
-        // 크롤링 함수
-        async function crawlJob() {
-            const jobUrl = document.getElementById('jobUrl').value;
-            const loading = document.getElementById('loading');
-            const results = document.getElementById('results');
-
-            if (!jobUrl) {
-                alert('URL을 입력해주세요.');
-                return;
-            }
-
-            if (!jobUrl.includes('saramin.co.kr')) {
-                alert('사람인 채용 공고 URL만 입력 가능합니다.');
-                return;
-            }
-
-            loading.style.display = 'block';
-            results.innerHTML = '';
-
-            try {
-                const response = await fetch('/api/crawl', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        url: jobUrl
-                    })
-                });
-
-                if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.detail || '크롤링 중 오류가 발생했습니다.');
-                }
-
-                const data = await response.json();
-                
-                if (data.success && data.job) {
-                    const card = createJobCard(data.job);
-                    results.appendChild(card);
-                } else {
-                    alert('채용 공고 정보를 가져올 수 없습니다.');
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                alert(error.message);
-            } finally {
-                loading.style.display = 'none';
-            }
-        }
-
-        // 채용 공고 카드 생성
-        function createJobCard(job) {
-            const col = document.createElement('div');
-            col.className = 'col-md-12';
-            
-            col.innerHTML = `
-                <div class="card job-card">
-                    <div class="card-body">
-                        <h5 class="card-title">${job.title}</h5>
-                        <h6 class="card-subtitle mb-2 text-muted">${job.company}</h6>
-                        <div class="mb-2">
-                            <small class="text-muted">
-                                <i class="bi bi-geo-alt"></i> ${job.location || '위치 정보 없음'}
-                            </small>
-                        </div>
-                        <div class="mb-2">
-                            <small class="text-muted">
-                                <i class="bi bi-briefcase"></i> ${job.experience || '경력 정보 없음'}
-                            </small>
-                        </div>
-                        <div class="mb-2">
-                            <small class="text-muted">
-                                <i class="bi bi-mortarboard"></i> ${job.education || '학력 정보 없음'}
-                            </small>
-                        </div>
-                        <div class="mb-2">
-                            <small class="text-muted">
-                                <i class="bi bi-cash"></i> ${job.salary || '급여 정보 없음'}
-                            </small>
-                        </div>
-                        <div class="mb-2">
-                            <small class="text-muted">
-                                <i class="bi bi-calendar"></i> ${job.deadline || '마감일 정보 없음'}
-                            </small>
-                        </div>
-                        <div class="mb-3">
-                            <small class="text-muted">
-                                <i class="bi bi-link-45deg"></i> ${job.link}
-                            </small>
-                        </div>
-                        <div class="mb-3">
-                            <h6>상세 내용:</h6>
-                            <p class="card-text">${job.description || '상세 내용 없음'}</p>
-                        </div>
-                        <a href="${job.link}" target="_blank" class="btn btn-primary">원본 보기</a>
-                    </div>
-                </div>
-            `;
-            
-            return col;
-        }
-
-        // 이력서 카드 생성
-        function createResumeCard(resume) {
-            const col = document.createElement('div');
-            col.className = 'col-md-6 mb-4';
-            
-            col.innerHTML = `
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title">${resume.name}</h5>
-                        <h6 class="card-subtitle mb-2 text-muted">${resume.email}</h6>
-                        <p class="card-text">
-                            <small class="text-muted">
-                                <i class="bi bi-telephone"></i> ${resume.phone}
-                            </small>
-                        </p>
-                        <div class="mb-3">
-                            <h6>학력:</h6>
-                            <ul class="list-unstyled">
-                                ${resume.education.map(edu => `<li>${edu}</li>`).join('')}
-                            </ul>
-                        </div>
-                        <div class="mb-3">
-                            <h6>경력:</h6>
-                            <ul class="list-unstyled">
-                                ${resume.experience.map(exp => `<li>${exp}</li>`).join('')}
-                            </ul>
-                        </div>
-                        <div class="mb-3">
-                            <h6>기술 스택:</h6>
-                            <div class="d-flex flex-wrap gap-2">
-                                ${resume.skills.map(skill => `<span class="badge bg-primary">${skill}</span>`).join('')}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            return col;
-        }
-
         // 지원 현황 카드 생성
         function createApplicationCard(application) {
-            const col = document.createElement('div');
-            col.className = 'col-md-6 mb-4';
-            
-            col.innerHTML = `
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title">${application.job_title}</h5>
-                        <h6 class="card-subtitle mb-2 text-muted">${application.company}</h6>
-                        <p class="card-text">
-                            <small class="text-muted">
-                                <i class="bi bi-calendar"></i> 지원일: ${new Date(application.applied_at).toLocaleDateString()}
-                            </small>
-                        </p>
-                        <div class="mb-3">
-                            <h6>지원 상태:</h6>
-                            <span class="badge bg-${getStatusColor(application.status)}">${application.status}</span>
-                        </div>
-                        <div class="mb-3">
-                            <h6>피드백:</h6>
-                            <p class="card-text">${application.feedback || '피드백 없음'}</p>
-                        </div>
+            const card = document.createElement('div');
+            card.className = 'col-md-6 mb-4';
+            card.innerHTML = `
+                <div class="application-card">
+                    <h3>${application.job_title}</h3>
+                    <p class="company">${application.company}</p>
+                    <div class="details">
+                        <p><i class="bi bi-calendar"></i> 지원일: ${new Date(application.applied_at).toLocaleDateString()}</p>
+                        <p><i class="bi bi-check-circle"></i> 상태: ${application.status}</p>
+                    </div>
+                    <div class="mt-3">
+                        <button class="btn btn-primary" onclick="updateApplicationStatus('${application.id}', '서류합격')">서류합격</button>
+                        <button class="btn btn-warning" onclick="updateApplicationStatus('${application.id}', '면접중')">면접중</button>
+                        <button class="btn btn-success" onclick="updateApplicationStatus('${application.id}', '최종합격')">최종합격</button>
+                        <button class="btn btn-danger" onclick="updateApplicationStatus('${application.id}', '불합격')">불합격</button>
                     </div>
                 </div>
             `;
-            
-            return col;
+            return card;
         }
 
-        // 상태에 따른 배지 색상 반환
-        function getStatusColor(status) {
-            switch(status.toLowerCase()) {
-                case '지원완료':
-                    return 'success';
-                case '서류통과':
-                    return 'info';
-                case '면접대기':
-                    return 'warning';
-                case '최종합격':
-                    return 'primary';
-                case '불합격':
-                    return 'danger';
-                default:
-                    return 'secondary';
-            }
-        }
-
-        // 이력서 제출
-        async function submitResume(event) {
-            event.preventDefault();
-            
-            const resume = {
-                name: document.getElementById('name').value,
-                email: document.getElementById('email').value,
-                phone: document.getElementById('phone').value,
-                education: document.getElementById('education').value.split('\n'),
-                experience: document.getElementById('experience').value.split('\n'),
-                skills: document.getElementById('skills').value.split(',').map(s => s.trim())
-            };
-
+        // 지원 현황 상태 업데이트
+        async function updateApplicationStatus(applicationId, status) {
             try {
-                const response = await fetch('/api/resumes', {
-                    method: 'POST',
+                const response = await fetch(`/api/applications/${applicationId}`, {
+                    method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify(resume)
+                    body: JSON.stringify({ status })
                 });
 
-                if (!response.ok) {
-                    throw new Error('이력서 저장 중 오류가 발생했습니다.');
-                }
-
-                alert('이력서가 저장되었습니다.');
-                document.getElementById('resumeForm').reset();
-                loadResumes();
-                updateDashboard();
-            } catch (error) {
-                console.error('Error:', error);
-                alert(error.message);
-            }
-        }
-
-        // 포트폴리오 추가
-        async function addPortfolio(event) {
-            event.preventDefault();
-            
-            const portfolio = {
-                title: document.getElementById('projectTitle').value,
-                description: document.getElementById('projectDesc').value,
-                link: document.getElementById('projectLink').value
-            };
-
-            try {
-                const response = await fetch('/api/portfolio', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(portfolio)
-                });
-
-                if (!response.ok) {
-                    throw new Error('포트폴리오 저장 중 오류가 발생했습니다.');
-                }
-
-                alert('포트폴리오가 저장되었습니다.');
-                document.getElementById('portfolioForm').reset();
-                loadPortfolio();
-            } catch (error) {
-                console.error('Error:', error);
-                alert(error.message);
-            }
-        }
-
-        // 포트폴리오 목록 로드
-        async function loadPortfolio() {
-            try {
-                const response = await fetch('/api/portfolio');
                 const data = await response.json();
                 
-                const portfolioList = document.getElementById('portfolioList');
-                portfolioList.innerHTML = '';
-                
-                data.portfolio.forEach(project => {
-                    const card = createPortfolioCard(project);
-                    portfolioList.appendChild(card);
-                });
+                if (data.success) {
+                    alert('상태가 업데이트되었습니다.');
+                    loadApplications();
+                } else {
+                    alert('상태 업데이트에 실패했습니다.');
+                }
             } catch (error) {
-                console.error('포트폴리오 로드 중 오류:', error);
+                console.error('상태 업데이트 중 오류:', error);
+                alert('상태 업데이트 중 오류가 발생했습니다.');
             }
         }
-
-        // 포트폴리오 카드 생성
-        function createPortfolioCard(project) {
-            const col = document.createElement('div');
-            col.className = 'col-md-6 mb-4';
-            
-            col.innerHTML = `
-                <div class="card portfolio-card">
-                    <div class="card-body">
-                        <h5 class="card-title">${project.title}</h5>
-                        <p class="card-text">${project.description}</p>
-                        ${project.link ? `<a href="${project.link}" target="_blank" class="btn btn-primary">프로젝트 보기</a>` : ''}
-                    </div>
-                </div>
-            `;
-            
-            return col;
-        }
-
-        // 페이지 로드 시 초기화
-        document.addEventListener('DOMContentLoaded', function() {
-            updateDashboard();
-            loadJobs();
-            loadResumes();
-            loadApplications();
-            loadPortfolio();
-        });
     </script>
 </body>
 </html> 
